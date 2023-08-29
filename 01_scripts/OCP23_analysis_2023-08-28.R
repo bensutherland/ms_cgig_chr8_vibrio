@@ -330,7 +330,7 @@ graph_relatives(input.FN = "03_results/fs_offsp_F1_pw_logl_5.txt", logl_cutoff =
                 , drop_string = "G00", directed = F, plot_width = 5, plot_height = 5
 )
 
-graph_relatives(input.FN = "03_results/fs_parent_F0_pw_logl_5.txt", logl_cutoff = 10
+graph_relatives(input.FN = "03_results/fs_parent_F0_pw_logl_5.txt", logl_cutoff = 5
                 , drop_string = "G00", directed = F, plot_width = 5, plot_height = 5
 )
 
