@@ -24,11 +24,12 @@ proton_to_genepop(hotspot_only = TRUE, neg_control = "Blank")
 #### 01. Load data ####
 load_genepop(datatype = "SNP")
 ## note: input file is "02_input_data/R_2023_07_26_12_44_23_user_GSS5PR-0268-78-Ampseq_Oyster_20230725_gen_data.gen"
+head(indNames(obj)) # in standard amplitools format
 
 #### 02. Prepare data ####
 ##### 02.1 Manually assign population names based on samples present #####
 generate_popmap(df = obj, format = "amplitools") # output is obj.simplified_names
-obj <- obj.simplified_names
+obj <- obj.simplified_names # overwrite with simplified sample names
 
 # Manually annotate the pop map file "02_input_data/my_data_ind-to-pop.txt"
 # , save with "_annot.txt" appended, populate with pop names (no spaces)
@@ -39,8 +40,17 @@ indiv_annot.df <- read.table(file = "02_input_data/my_data_ind-to-pop_annot.txt"
                              , header = T, sep = "\t"
                              #, quote = F
 )
+head(indiv_annot.df)
 
 ## Update population names
+# Obtain sample names from obj and keep as indiv.df
+indiv.df <- NULL
+indiv.df <- indNames(obj)
+indiv.df <- as.data.frame(indiv.df)
+colnames(indiv.df) <- "indiv"
+head(indiv.df)
+head(indiv_annot.df)
+
 # Merge with the population annotation, do not sort
 indiv_annot_in_order.df <- merge(x = indiv.df, indiv_annot.df, by = "indiv"
                                  , all.x = T, sort = FALSE # very necessary line
@@ -61,10 +71,12 @@ tail(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 # # table(test[,1] == test[ ,2])
 # ## /END/ ##
 
-# Assign the pop IDs to the genind
-pop(obj) <- indiv_annot_in_order.df$pop.y
-table((pop(obj)))
+# Set variable
+naming_col <- "alt.ID"
 
+# Assign the pop IDs to the genind
+pop(obj) <- indiv_annot_in_order.df[, "pop"]
+table((pop(obj)))
 
 ##### 02.2 Add in population colours #####
 ## Population colours
@@ -75,6 +87,13 @@ colours
 # Save out colours to be used downstream
 colnames(x = colours) <- c("collection", "colour")
 write.csv(x = colours, file = "00_archive/formatted_cols.csv", quote = F, row.names = F)
+
+### ALSO PART OF EARLIER DIDN'T WORK METHOD ##
+# # Avoid duplicated names
+# # obj.bck <- obj
+# duplicated_indNames <- which(duplicated(indNames(obj)))
+# indNames(obj)[duplicated_indNames] <- paste0(indNames(obj)[duplicated_indNames], "_dup")
+### /END/ ALSO PART OF EARLIER DIDN'T WORK METHOD ##
 
 
 #### 03. Characterize missing data (indiv and loci) and filter ####
@@ -90,8 +109,11 @@ percent_missing_by_ind(df = obj)
 head(missing_data.df)
 
 # Add pop IDs to the missing data df
+head(missing_data.df)
+head(indiv_annot.df)
 missing_data.df <- merge(x = missing_data.df, y = indiv_annot.df, by.x = "ind", by.y = "indiv", all.x = T)
 head(missing_data.df)
+dim(missing_data.df)
 
 # Add colours to the missing data df
 colours
@@ -189,7 +211,7 @@ obj.all.filt <- obj.filt[, loc=keep]
 
 # Rename back to obj
 obj <- obj.all.filt
-
+obj
 
 ##### 03.3 Drop monomorphic loci #####
 drop_loci(df = obj, drop_monomorphic = TRUE) # drops monomorphic markers
@@ -199,20 +221,6 @@ obj <- obj_filt
 
 ##### 03.4 Post-QC info collection #####
 obj
-
-## View the ind or loc names
-inds <- indNames(obj)
-loci <- locNames(obj)
-
-# Save out which individuals have passed the filters
-write.table(x = inds, file = "03_results/retained_individuals.txt", sep = "\t", quote = F
-            , row.names = F, col.names = F
-)
-
-write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote = F
-            , row.names = F, col.names = F
-)
-
 
 ##### 03.5 per marker stats and filters #####
 # MAF information
@@ -240,6 +248,20 @@ plot(per_loc_stats.df$Fst, per_loc_stats.df$Hobs
 )
 dev.off()
 
+## View the ind or loc names
+inds <- indNames(obj)
+loci <- locNames(obj)
+
+# Save out which individuals have passed the filters
+write.table(x = inds, file = "03_results/retained_individuals.txt", sep = "\t", quote = F
+            , row.names = F, col.names = F
+)
+
+write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote = F
+            , row.names = F, col.names = F
+)
+
+
 #table(per_loc_stats.df$Hobs > 0.5) 
 # note: not dropping any loci based on HWP or HOBS at this time, given the non-random selection of individuals
 
@@ -248,16 +270,21 @@ save.image(file = "filtered_genind_before_ckmr.RData")
 # Restore by sourcing sps and
 # load(file = "filtered_genind_before_ckmr.RData")
 
-table(pop(obj))
-
 
 #### Drop _1 or _2 replicate parents
-# Remove specific individuals
-#keep <- indNames(obj)[grep(pattern = "_2$", x = indNames(obj), invert = T)] # Keep replicate 1
-keep <- indNames(obj)[grep(pattern = "_1$", x = indNames(obj), invert = T)] # Keep replicate 2
-obj <- obj[(keep)]
 table(pop(obj))
 
+# Remove specific individuals
+keep <- indNames(obj)[grep(pattern = "_2$", x = indNames(obj), invert = T)] # Keep replicate 1
+#keep <- indNames(obj)[grep(pattern = "_1$", x = indNames(obj), invert = T)] # Keep replicate 2
+obj <- obj[(keep)]
+table(pop(obj))
+obj
+
+# Remove unneeded pops
+obj.sep <- seppop(obj)
+obj <- repool(obj.sep$F0, obj.sep$F1)
+obj
 
 #### 04. Analysis ####
 ####### Convert genepop to Rubias format #####
@@ -280,6 +307,33 @@ micro_stock_code.FN <- "00_archive/stock_code.txt"
 datatype <- "SNP" # required for genepop_to_rubias_SNP
 as.data.frame(cbind(indNames(obj), as.character(pop(obj)))) # Note: BR27 should be VIU_F0 [confirmed]
 obj # the current analysis object
+
+obj
+
+# Use alt.id
+# Obtain sample names from obj and keep as indiv.df
+indiv.df <- NULL
+indiv.df <- indNames(obj)
+indiv.df <- as.data.frame(indiv.df)
+colnames(indiv.df) <- "indiv"
+head(indiv.df)
+head(indiv_annot.df)
+
+# Merge with the population annotation, do not sort
+indiv_annot_in_order.df <- merge(x = indiv.df, indiv_annot.df, by = "indiv"
+                                 , all.x = T, sort = FALSE # very necessary line
+)
+
+head(indiv_annot_in_order.df)
+head(indiv.df)
+
+# Assign the sample IDs to the genind
+indNames(obj) <- indiv_annot_in_order.df[, naming_col]
+indNames(obj)
+pop(obj)
+# /END/ NOTE: this really didn't work ##
+### STILL DIDNT WORK, BECAUSE IT CAUSES GENEPOP TO RUBIAS TO FAIL ####
+### SHOULD EDIT the INDIV NAMES AFTER MAKING A RUBIAS FILE #### DO IT IN AMPLITOOLS
 
 # All filters applied
 genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN)
