@@ -1,5 +1,4 @@
-## Analysis script for OCP23 
-# uses amplitools
+## Analysis script for OCP23 (parentage analysis)
 # Ben Sutherland and Liam Surry, VIU
 # initialized 2023-08-24
 
@@ -28,38 +27,10 @@ load_genepop(datatype = "SNP")
 
 #### 02. Prepare data ####
 ##### 02.1 Manually assign population names based on samples present #####
-#### TODO: AMPLITOOLS PREP FUNCTION: CREATE INDLIST ####
-## Create a list of individuals for manual addition of population
-indiv.df <- as.data.frame(indNames(obj))
-colnames(indiv.df) <- "indiv"
-head(indiv.df)
+generate_popmap(df = obj, format = "amplitools") # output is obj.simplified_names
+obj <- obj.simplified_names
 
-# Separate components of indiv ID (i.e., run, barcode, sample)
-indiv.df <- separate(data = indiv.df, col = "indiv", into = c("run", "barcode", "indiv"), sep = "__", remove = T)
-head(indiv.df)
-
-# Use reduced indiv name as indname in genind
-indNames(obj) <- indiv.df$indiv
-
-# How many samples from each run? 
-table(indiv.df$run) # 190, only a single run here
-
-# Prepare to write out a clean text file to add pop attribute per sample
-indiv.df <- as.data.frame(indiv.df[, "indiv"])
-colnames(indiv.df) <- "indiv"
-indiv.df$pop <- NA # Add dummy column to fill manually
-head(indiv.df)
-
-# Write out empty file to provide pop names
-write.table(x = indiv.df, file = "02_input_data/my_data_ind-to-pop.txt"
-            , sep = "\t", col.names = T, row.names = F
-            , quote = F
-)
-
-### /END/ AMPLITOOLS PREP FUNCTION: CREATE INDLIST ###
-
-
-# In folder above, *manually annotate* the output file above
+# Manually annotate the pop map file "02_input_data/my_data_ind-to-pop.txt"
 # , save with "_annot.txt" appended, populate with pop names (no spaces)
 
 ### TODO: AMPLITOOLS CONNECT POPS ####
@@ -132,7 +103,7 @@ head(plot_cols.df)
 # Plot missing data by individual
 pdf(file = "03_results/geno_rate_by_ind.pdf", width = plot_width, height = plot_height)
 plot(100 * (1 - plot_cols.df$ind.per.missing), ylab = "Genotyping rate (%)"
-     , col = plot_cols.df$my.cols
+     , col = plot_cols.df$colour
      , las = 1
      , xlab = "Individual"
      , ylim = c(0,100)
@@ -143,7 +114,7 @@ plot(100 * (1 - plot_cols.df$ind.per.missing), ylab = "Genotyping rate (%)"
 abline(h = 50, lty = 3)
 
 legend("bottomleft", legend = unique(plot_cols.df$pop)
-       , fill = unique(plot_cols.df$my.cols)
+       , fill = unique(plot_cols.df$colour)
        , cex = 0.7
        , bg = "white"
 )
@@ -244,20 +215,19 @@ write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote =
 
 
 ##### 03.5 per marker stats and filters #####
-# # MAF information
-# maf_filt(data = obj, maf = 0.01)
-# head(myFreq)
-# 
-# pdf(file = "03_results/maf_freq.pdf", width = 7, height = 5)
-# hist(myFreq, breaks = 20, main = "", xlab = "MAF", las = 1)
-# dev.off()
-# 
-# obj <- obj_maf_filt
+# MAF information
+maf_filt(data = obj, maf = 0.01)
+head(myFreq)
+
+pdf(file = "03_results/maf_freq.pdf", width = 7, height = 5)
+hist(myFreq, breaks = 20, main = "", xlab = "MAF", las = 1)
+dev.off()
+
+obj <- obj_maf_filt
 
 ## Per locus statistics
 per_locus_stats(data = obj)
 head(per_loc_stats.df)
-
 
 # Plot Fst by Hobs
 pdf(file = "03_results/per_locus_Fst_v_Hobs.pdf", width = 8, height = 5) 
@@ -270,12 +240,21 @@ plot(per_loc_stats.df$Fst, per_loc_stats.df$Hobs
 )
 dev.off()
 
-table(per_loc_stats.df$Hobs > 0.5) 
+#table(per_loc_stats.df$Hobs > 0.5) 
+# note: not dropping any loci based on HWP or HOBS at this time, given the non-random selection of individuals
 
-# Not dropping any loci based on HWP or HOBS at this time, given the non-random selection of individuals
+# Save output
+save.image(file = "filtered_genind_before_ckmr.RData")
+# Restore by sourcing sps and
+# load(file = "filtered_genind_before_ckmr.RData")
 
+table(pop(obj))
+
+
+#### Drop _1 or _2 replicate parents
 # Remove specific individuals
-keep <- indNames(obj)[grep(pattern = "_2$", x = indNames(obj), invert = T)]
+#keep <- indNames(obj)[grep(pattern = "_2$", x = indNames(obj), invert = T)] # Keep replicate 1
+keep <- indNames(obj)[grep(pattern = "_1$", x = indNames(obj), invert = T)] # Keep replicate 2
 obj <- obj[(keep)]
 table(pop(obj))
 
