@@ -27,15 +27,18 @@ load_genepop(datatype = "SNP")
 head(indNames(obj)) # indiv names are in standard amplitools format
 
 #### 02. Prepare data ####
+# Simplify amplitools names
+simplify_names(df = obj, format = "amplitools")
+obj <- obj_simplified
+
 ##### 02.1 Manually assign population names based on samples present #####
-generate_popmap(df = obj, format = "amplitools") # output is obj.simplified_names
-obj <- obj.simplified_names # overwrite with simplified sample names
+generate_popmap(df = obj)
 
 # Manually annotate the pop map file "02_input_data/my_data_ind-to-pop.txt"
 # , save with "_annot.txt" appended, populate with pop names (no spaces)
 
 ## Load annotated df
-indiv_annot.df <- read.table(file = "02_input_data/my_data_ind-to-pop_annot.txt"
+indiv_annot.df <- read.table(file = "00_archive/my_data_ind-to-pop_annot.txt"
                              , header = T, sep = "\t"
                              #, quote = F
 )
@@ -47,6 +50,8 @@ indiv.df <- NULL
 indiv.df <- indNames(obj)
 indiv.df <- as.data.frame(indiv.df)
 colnames(indiv.df) <- "indiv"
+
+# These are the two files that will be merged
 head(indiv.df)
 head(indiv_annot.df)
 
@@ -269,6 +274,12 @@ obj.sep <- seppop(obj)
 obj <- repool(obj.sep$F0, obj.sep$F1)
 obj
 
+##### Drop monomorphic loci #####
+drop_loci(df = obj, drop_monomorphic = TRUE) # drops monomorphic markers
+
+obj <- obj_filt
+table(pop(obj))
+
 
 #### 04. Analysis ####
 ####### Convert genepop to Rubias format #####
@@ -296,12 +307,11 @@ obj
 
 
 # All filters applied
-genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN)
+pop_map.FN <- "00_archive/my_data_ind-to-pop_annot.txt"
+genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN, pop_map.FN = pop_map.FN)
 print("Your output is available as '03_results/rubias_output_SNP.txt")
 
-#### IMPORTANT NOTE: appears to be an error in the genepop_to_rubias_SNP that somehow messes up the repunit assigned ####
-
-
+##### Update sample IDs in the rubias file ####
 # Update sample IDs in the rubias file
 rubias.df <- read.delim2(file = "03_results/rubias_output_SNP.txt", sep = "\t")
 dim(rubias.df)
@@ -310,9 +320,8 @@ rubias.df$repunit <- rubias.df$collection # hacky fix to whatever caused the err
 rubias.df[1:5, 1:10]
 
 ## Load annotated df that was manually made earlier
-indiv_annot.df <- read.table(file = "02_input_data/my_data_ind-to-pop_annot.txt"
+indiv_annot.df <- read.table(file = "00_archive/my_data_ind-to-pop_annot.txt"
                              , header = T, sep = "\t"
-                             #, quote = F
 )
 head(indiv_annot.df)
 indiv_annot.df <- indiv_annot.df[,c("indiv", "alt.ID")]
@@ -321,7 +330,7 @@ rubias.df[1:5, 1:10]
 
 rubias.df <- merge(x = rubias.df, y = indiv_annot.df, by = "indiv", all.x = TRUE, sort = F)
 dim(rubias.df)
-rubias.df[1:5, 730:738]
+rubias.df[1:5, 699:709]
 
 rubias.df <- rubias.df[, !colnames(rubias.df) %in% "indiv"]
 rubias.df[1:5, 1:10]
