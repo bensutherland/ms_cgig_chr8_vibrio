@@ -24,7 +24,7 @@ proton_to_genepop(hotspot_only = TRUE, neg_control = "Blank")
 #### 01. Load data ####
 load_genepop(datatype = "SNP")
 ## note: input file is "02_input_data/R_2023_07_26_12_44_23_user_GSS5PR-0268-78-Ampseq_Oyster_20230725_gen_data.gen"
-head(indNames(obj)) # in standard amplitools format
+head(indNames(obj)) # indiv names are in standard amplitools format
 
 #### 02. Prepare data ####
 ##### 02.1 Manually assign population names based on samples present #####
@@ -34,15 +34,14 @@ obj <- obj.simplified_names # overwrite with simplified sample names
 # Manually annotate the pop map file "02_input_data/my_data_ind-to-pop.txt"
 # , save with "_annot.txt" appended, populate with pop names (no spaces)
 
-### TODO: AMPLITOOLS CONNECT POPS ####
-# Load annotated df
+## Load annotated df
 indiv_annot.df <- read.table(file = "02_input_data/my_data_ind-to-pop_annot.txt"
                              , header = T, sep = "\t"
                              #, quote = F
 )
 head(indiv_annot.df)
 
-## Update population names
+## Update pop attribute
 # Obtain sample names from obj and keep as indiv.df
 indiv.df <- NULL
 indiv.df <- indNames(obj)
@@ -51,7 +50,7 @@ colnames(indiv.df) <- "indiv"
 head(indiv.df)
 head(indiv_annot.df)
 
-# Merge with the population annotation, do not sort
+# Merge the ordered sample names with updated population annotation, do not sort
 indiv_annot_in_order.df <- merge(x = indiv.df, indiv_annot.df, by = "indiv"
                                  , all.x = T, sort = FALSE # very necessary line
 )
@@ -62,23 +61,11 @@ head(indiv_annot_in_order.df)
 head(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 tail(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 
-### TODO: add data-check in this step###
-# # Write a little test to be sure
-# test <- cbind(indNames(obj), indiv_annot_in_order.df$indiv)
-# table(test[,1] == test[ ,2])
-# 
-# # test <- cbind(indNames(obj), sort(indiv_annot_in_order.df$indiv))
-# # table(test[,1] == test[ ,2])
-# ## /END/ ##
-
-# Set variable
-naming_col <- "alt.ID"
-
-# Assign the pop IDs to the genind
+# Update the pop attribute from the ordered sample metadata
 pop(obj) <- indiv_annot_in_order.df[, "pop"]
 table((pop(obj)))
 
-##### 02.2 Add in population colours #####
+##### 02.2 Set population colours #####
 ## Population colours
 colours <- matrix(c("F1", "F0", "OAR", "darkgreen", "purple", "black"), nrow = 3, ncol = 2)
 colnames(colours) <- c("my.pops", "my.cols")
@@ -87,13 +74,6 @@ colours
 # Save out colours to be used downstream
 colnames(x = colours) <- c("collection", "colour")
 write.csv(x = colours, file = "00_archive/formatted_cols.csv", quote = F, row.names = F)
-
-### ALSO PART OF EARLIER DIDN'T WORK METHOD ##
-# # Avoid duplicated names
-# # obj.bck <- obj
-# duplicated_indNames <- which(duplicated(indNames(obj)))
-# indNames(obj)[duplicated_indNames] <- paste0(indNames(obj)[duplicated_indNames], "_dup")
-### /END/ ALSO PART OF EARLIER DIDN'T WORK METHOD ##
 
 
 #### 03. Characterize missing data (indiv and loci) and filter ####
@@ -108,12 +88,15 @@ plot_pch <- 16
 percent_missing_by_ind(df = obj)
 head(missing_data.df)
 
-# Add pop IDs to the missing data df
+# Add pop attribute to the missing data df
 head(missing_data.df)
 head(indiv_annot.df)
 missing_data.df <- merge(x = missing_data.df, y = indiv_annot.df, by.x = "ind", by.y = "indiv", all.x = T)
 head(missing_data.df)
 dim(missing_data.df)
+
+# Can observe missing data by sex
+boxplot(missing_data.df$ind.num.typed ~ missing_data.df$sex)
 
 # Add colours to the missing data df
 colours
@@ -266,9 +249,9 @@ write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote =
 # note: not dropping any loci based on HWP or HOBS at this time, given the non-random selection of individuals
 
 # Save output
-save.image(file = "filtered_genind_before_ckmr.RData")
+save.image(file = "03_results/filtered_genind_before_ckmr.RData")
 # Restore by sourcing sps and
-# load(file = "filtered_genind_before_ckmr.RData")
+# load(file = "03_results/filtered_genind_before_ckmr.RData")
 
 
 #### Drop _1 or _2 replicate parents
@@ -281,10 +264,11 @@ obj <- obj[(keep)]
 table(pop(obj))
 obj
 
-# Remove unneeded pops
+# Remove unneeded pops for the parentage analysis (i.e., OAR)
 obj.sep <- seppop(obj)
 obj <- repool(obj.sep$F0, obj.sep$F1)
 obj
+
 
 #### 04. Analysis ####
 ####### Convert genepop to Rubias format #####
@@ -310,35 +294,47 @@ obj # the current analysis object
 
 obj
 
-# Use alt.id
-# Obtain sample names from obj and keep as indiv.df
-indiv.df <- NULL
-indiv.df <- indNames(obj)
-indiv.df <- as.data.frame(indiv.df)
-colnames(indiv.df) <- "indiv"
-head(indiv.df)
-head(indiv_annot.df)
-
-# Merge with the population annotation, do not sort
-indiv_annot_in_order.df <- merge(x = indiv.df, indiv_annot.df, by = "indiv"
-                                 , all.x = T, sort = FALSE # very necessary line
-)
-
-head(indiv_annot_in_order.df)
-head(indiv.df)
-
-# Assign the sample IDs to the genind
-indNames(obj) <- indiv_annot_in_order.df[, naming_col]
-indNames(obj)
-pop(obj)
-# /END/ NOTE: this really didn't work ##
-### STILL DIDNT WORK, BECAUSE IT CAUSES GENEPOP TO RUBIAS TO FAIL ####
-### SHOULD EDIT the INDIV NAMES AFTER MAKING A RUBIAS FILE #### DO IT IN AMPLITOOLS
 
 # All filters applied
 genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN)
 print("Your output is available as '03_results/rubias_output_SNP.txt")
-file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_results/cgig_all_rubias.txt", overwrite = T)
+
+#### IMPORTANT NOTE: appears to be an error in the genepop_to_rubias_SNP that somehow messes up the repunit assigned ####
+
+
+# Update sample IDs in the rubias file
+rubias.df <- read.delim2(file = "03_results/rubias_output_SNP.txt", sep = "\t")
+dim(rubias.df)
+rubias.df[1:5, 1:10]
+rubias.df$repunit <- rubias.df$collection # hacky fix to whatever caused the error for the repunit being listed as the alt.id
+rubias.df[1:5, 1:10]
+
+## Load annotated df that was manually made earlier
+indiv_annot.df <- read.table(file = "02_input_data/my_data_ind-to-pop_annot.txt"
+                             , header = T, sep = "\t"
+                             #, quote = F
+)
+head(indiv_annot.df)
+indiv_annot.df <- indiv_annot.df[,c("indiv", "alt.ID")]
+
+rubias.df[1:5, 1:10]
+
+rubias.df <- merge(x = rubias.df, y = indiv_annot.df, by = "indiv", all.x = TRUE, sort = F)
+dim(rubias.df)
+rubias.df[1:5, 730:738]
+
+rubias.df <- rubias.df[, !colnames(rubias.df) %in% "indiv"]
+rubias.df[1:5, 1:10]
+
+rubias.df <-  rubias.df %>% 
+                  select(alt.ID, everything())
+rubias.df[1:5, 1:10]
+colnames(rubias.df)[which(colnames(rubias.df)=="alt.ID")] <- "indiv"
+rubias.df[1:5, 1:10]
+
+write.table(x = rubias.df, file = "03_results/rubias_output_SNP_renamed.txt", sep = "\t", row.names = FALSE)
+
+file.copy(from = "03_results/rubias_output_SNP_renamed.txt", to = "../amplitools/03_results/cgig_all_rubias.txt", overwrite = T)
 
 
 #### Parentage Analysis ####
@@ -346,7 +342,7 @@ file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_resu
 
 # Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
 ckmr_from_rubias(input.FN = "03_results/cgig_all_rubias.txt", parent_pop = "F0"
-                 , offspring_pop = "F1", cutoff = 5
+                 , offspring_pop = "F1", cutoff = 2
 )
 
 # Generate report from the output of CKMR-sim
