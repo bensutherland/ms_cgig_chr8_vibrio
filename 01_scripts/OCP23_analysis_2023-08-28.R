@@ -351,8 +351,12 @@ file.copy(from = "03_results/rubias_output_SNP_renamed.txt", to = "../amplitools
 
 # Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
 ckmr_from_rubias(input.FN = "03_results/cgig_all_rubias.txt", parent_pop = "F0"
-                 , offspring_pop = "F1", cutoff = 2
+                 , offspring_pop = "F1", cutoff = 5
 )
+
+### New items to do: 
+# check number of loci per indiv from rubias file here (amplitools), retain to connect to report
+# use sex attribute within the prep report
 
 # Generate report from the output of CKMR-sim
 prep_report(relationship = "PO")
@@ -361,15 +365,15 @@ prep_report(relationship = "PO")
 
 # Plot the output results
 graph_relatives(input.FN = "03_results/po_F0_vs_F1_pw_logl_5.txt", logl_cutoff = 5
-                , drop_string = "G00", directed = F, plot_width = 5, plot_height = 5
+                , drop_string = "", directed = F, plot_width = 12, plot_height = 12
 )
 
 graph_relatives(input.FN = "03_results/fs_offsp_F1_pw_logl_5.txt", logl_cutoff = 5
-                , drop_string = "G00", directed = F, plot_width = 5, plot_height = 5
+                , drop_string = "", directed = F, plot_width = 12, plot_height = 12
 )
 
 graph_relatives(input.FN = "03_results/fs_parent_F0_pw_logl_5.txt", logl_cutoff = 5
-                , drop_string = "G00", directed = F, plot_width = 5, plot_height = 5
+                , drop_string = "", directed = F, plot_width = 12, plot_height = 12
 )
 
 
