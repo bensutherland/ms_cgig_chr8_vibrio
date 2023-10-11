@@ -37,8 +37,25 @@ Use cutadapt to clean the raw reads:
 ./00-scripts/01_cutadapt.sh 8 
 ```
 
+#### d. Check the trimmed data ####
+View trimmed data with fastqc and multiqc:     
+```
+mkdir 02-raw/trimmed/fastqc_trimmed/    
+fastqc -t 5 02-raw/trimmed/*.fastq.gz -o 02-raw/trimmed/fastqc_trimmed/
+multiqc -o 02-raw/trimmed/fastqc_trimmed/ 02-raw/trimmed/fastqc_trimmed       
+```
 
-#### d. Prepare sample metadata ####
+#### e. Prepare sample metadata ####
+Prepare a sample metadata file using necessary inputs as per `stacks_workflow` README.       
+
+
+#### f. Demultiplex ####
+Detect cut sites and barcodes to de-multiplex and truncate reads to 80 bp with `process_radtags in parallel`:     
+`00-scripts/02_process_radtags_2_enzymes_parallel.sh 80 nsiI mspI 8`    
+
+
+
+
 
 
 
