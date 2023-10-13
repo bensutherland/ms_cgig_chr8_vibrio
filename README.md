@@ -50,12 +50,27 @@ Prepare a sample metadata file using necessary inputs as per `stacks_workflow` R
 
 
 #### f. Demultiplex ####
-Detect cut sites and barcodes to de-multiplex and truncate reads to 80 bp with `process_radtags in parallel`:     
+Detect cut sites and barcodes to de-multiplex and truncate reads to 80 bp with `process_radtags` in parallel:     
 `00-scripts/02_process_radtags_2_enzymes_parallel.sh 80 nsiI mspI 8`    
 
 
+#### g. Rename samples ####
+`./00-scripts/03_rename_samples.sh`      
 
 
+View trimmed data with fastqc and multiqc:     
+```
+mkdir 04-all_samples/fastqc/    
+fastqc -t 48 04-all_samples/*.fq.gz -o 04-all_samples/fastqc/
+multiqc -o 04-all_samples/fastqc/ 04-all_samples/fastqc/       
+```
+
+#### h. Alignment ####
+Index the genome:      
+`bwa index GCF_902806645.1_cgigas_uk_roslin_v1_genomic.fna.gz`               
+
+Align samples against the genome:     
+`./00-scripts/bwa_mem_align_reads.sh 32`      
 
 
 
