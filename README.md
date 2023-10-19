@@ -73,4 +73,20 @@ Align samples against the genome:
 `./00-scripts/bwa_mem_align_reads.sh 32`      
 
 
+#### i. Remove control samples and low quality samples ####
+We will do an analysis with all samples, except control samples, to see what we should use as a low read depth cutoff per sample.    
+
+Move any control or unused samples to `04-all_samples/removed_samples` (newly created directory)
+
+#### j. Genotype the samples ####
+Prepare the population map file:
+`./00-scripts/04_prepare_population_map.sh`    
+Note: manually remove the blank population, since these files are no longer in the dataset.    
+
+Genotype the samples:     
+`00_scripts/stacks2_gstacks_reference.sh`     
+
+Set flags and run the populations module to filter the data.     
+
+
 
