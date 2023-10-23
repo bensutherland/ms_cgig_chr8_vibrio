@@ -88,5 +88,23 @@ Genotype the samples:
 
 Set flags and run the populations module to filter the data.     
 
+```
+populations -P "$STACKS_FOLDER" -M "$INFO_FILES_FOLDER"/"$POP_MAP" \
+    -t "$NUM_CPU" -p 6 -r 0.7 \
+    --min-maf 0.01 \
+    --ordered-export --plink --hwe --write-single-snp --fasta-loci --vcf
+
+# Move the output to a new folder to store single-snp data
+mkdir 05-stacks/popn_out_single_snp/
+mv 05-stacks/populations.* 05-stacks/popn_out_single_snp/ 
+
+```
+
+#### k. Convert output plink data ####
+Use the single-SNP per locus data.      
+Convert plink files to a useable format for adegenet:        
+`plink --ped 05-stacks/popn_out_single_snp/populations.plink.ped --map 05-stacks/popn_out_single_snp/populations.plink.map --maf 0.01 --recode A --allow-extra-chr --out 05-stacks/popn_out_single_snp/populations_single_snp`      
 
 
+#### l. Population genetic analysis ####
+Read the data into R using the script `01_scripts/01_import_plink_to_genind.R`           
