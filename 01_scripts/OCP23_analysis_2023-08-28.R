@@ -8,7 +8,7 @@
 # Open and source amplitools/01_scripts/00_initiator.R
 
 # Convert proton to genepop
-proton_to_genepop(hotspot_only = TRUE, neg_control = "Blank")
+proton_to_genepop(neg_control = "Blank")
 
 # Prepare the genepop
 #./01_scripts/format_genepop.sh 02_input_data/prepped_matrices/<filename>.txt
@@ -30,6 +30,7 @@ head(indNames(obj)) # indiv names are in standard amplitools format
 # Simplify amplitools names
 simplify_names(df = obj, format = "amplitools")
 obj <- obj_simplified
+indNames(obj)
 
 ##### 02.1 Manually assign population names based on samples present #####
 generate_popmap(df = obj)
@@ -45,6 +46,7 @@ indiv_annot.df <- read.table(file = "00_archive/my_data_ind-to-pop_annot.txt"
 head(indiv_annot.df)
 
 ## Update pop attribute
+### TODO: this should be a function ##
 # Obtain sample names from obj and keep as indiv.df
 indiv.df <- NULL
 indiv.df <- indNames(obj)
@@ -69,6 +71,7 @@ tail(cbind(indiv_annot_in_order.df, indiv.df), n = 10)
 # Update the pop attribute from the ordered sample metadata
 pop(obj) <- indiv_annot_in_order.df[, "pop"]
 table((pop(obj)))
+
 
 ##### 02.2 Set population colours #####
 ## Population colours
@@ -147,7 +150,7 @@ table(pop(obj.filt))
 
 
 ##### 03.2 Loci - missing data #####
-### TODO: SPS function
+### TODO: this should be an SPS function
 # Filter loci based on missing data
 obj.df <- genind2df(obj.filt)
 obj.df[1:5,1:5]
@@ -305,54 +308,119 @@ obj # the current analysis object
 
 obj
 
+indNames(obj) # Still in the randomized format
 
-# All filters applied
-pop_map.FN <- "00_archive/my_data_ind-to-pop_annot.txt"
-genepop_to_rubias_SNP(data = obj, sample_type = "reference", custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN, pop_map.FN = pop_map.FN)
-print("Your output is available as '03_results/rubias_output_SNP.txt")
-
-##### Update sample IDs in the rubias file ####
-# Update sample IDs in the rubias file
-rubias.df <- read.delim2(file = "03_results/rubias_output_SNP.txt", sep = "\t")
-dim(rubias.df)
-rubias.df[1:5, 1:10]
-rubias.df$repunit <- rubias.df$collection # hacky fix to whatever caused the error for the repunit being listed as the alt.id
-rubias.df[1:5, 1:10]
-
-## Load annotated df that was manually made earlier
-indiv_annot.df <- read.table(file = "00_archive/my_data_ind-to-pop_annot.txt"
-                             , header = T, sep = "\t"
-)
+#### Renaming individuals to source names from randomized names (using alt.id) ####
+## Use annotated df
 head(indiv_annot.df)
 indiv_annot.df <- indiv_annot.df[,c("indiv", "alt.ID")]
 
-rubias.df[1:5, 1:10]
+indiv <- indNames(obj)
+indiv <- as.data.frame(indiv)
+head(indiv)
+# Rename the existing samples with the information from the annotation file
+indiv.df <- merge(x = indiv, y = indiv_annot.df, by = "indiv", all.x = T, sort = F)
+cbind(indiv, indiv.df)
+# Rename using the alt identifier
+indNames(obj) <- indiv.df$alt.ID
+indNames(obj) <- gsub(pattern = "/", replacement = "_", x = indNames(obj))
+indNames(obj)
 
-rubias.df <- merge(x = rubias.df, y = indiv_annot.df, by = "indiv", all.x = TRUE, sort = F)
-dim(rubias.df)
-rubias.df[1:5, 699:709]
+# Now that the individuals have been renamed, the original ind-to-pop pop map will no longer work
+# so we need to create a new one as follows
+renamed_pop_map.df <- cbind(indNames(obj), as.character(pop(obj)))
+renamed_pop_map.df <- as.data.frame(renamed_pop_map.df)
+colnames(renamed_pop_map.df) <- c("indiv", "pop") 
+head(renamed_pop_map.df)
 
-rubias.df <- rubias.df[, !colnames(rubias.df) %in% "indiv"]
-rubias.df[1:5, 1:10]
+write.table(x = renamed_pop_map.df, file = "00_archive/renamed_ind-to-pop.txt", sep = "\t", quote = F
+            , row.names = F, col.names = T
+)
 
-rubias.df <-  rubias.df %>% 
-                  select(alt.ID, everything())
-rubias.df[1:5, 1:10]
-colnames(rubias.df)[which(colnames(rubias.df)=="alt.ID")] <- "indiv"
-rubias.df[1:5, 1:10]
+## All filtered loci: write to rubias for parentage assignment
+pop_map.FN <- "00_archive/renamed_ind-to-pop.txt" # renamed samples
+genepop_to_rubias_SNP(data = obj, sample_type = "reference"
+                      , custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
+                      , pop_map.FN = pop_map.FN
+                      )
+print("Your output is available as '03_results/rubias_output_SNP.txt")
+# Copy to retain
+file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_results/rubias_output_SNP_all_filtered_loci.txt", overwrite = T)
 
-write.table(x = rubias.df, file = "03_results/rubias_output_SNP_renamed.txt", sep = "\t", row.names = FALSE)
+## Filtered loci but also with those removed due to null allele occurrences in pilot study
+drop_loci.FN <- "02_input_data/loci_to_remove_from_pilot.txt"
+drop_loci(df = obj, drop_file = drop_loci.FN)
 
-file.copy(from = "03_results/rubias_output_SNP_renamed.txt", to = "../amplitools/03_results/cgig_all_rubias.txt", overwrite = T)
+genepop_to_rubias_SNP(data = obj_filt, sample_type = "reference"
+                      , custom_format = TRUE, micro_stock_code.FN = micro_stock_code.FN
+                      , pop_map.FN = pop_map.FN
+)
+print("Your output is available as '03_results/rubias_output_SNP.txt")
+# Copy to retain
+file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_results/rubias_output_SNP_filtered_and_null_pilot_drop.txt", overwrite = T)
+
+# Save out image
+save.image("03_results/completed_popgen_analysis.RData")
+
+
+
+# Back from exploring_families.R
+
+
+
+
+# ##### Update sample IDs in the rubias file ####
+# # Update sample IDs in the rubias file
+# rubias.df <- read.delim2(file = "03_results/rubias_output_SNP.txt", sep = "\t")
+# dim(rubias.df)
+# rubias.df[1:5, 1:10]
+# rubias.df$repunit <- rubias.df$collection # hacky fix to whatever caused the error for the repunit being listed as the alt.id
+# rubias.df[1:5, 1:10]
+# 
+# ## Load annotated df that was manually made earlier
+# indiv_annot.df <- read.table(file = "00_archive/my_data_ind-to-pop_annot.txt"
+#                              , header = T, sep = "\t"
+# )
+# head(indiv_annot.df)
+# indiv_annot.df <- indiv_annot.df[,c("indiv", "alt.ID")]
+# 
+# rubias.df[1:5, 1:10]
+# 
+# rubias.df <- merge(x = rubias.df, y = indiv_annot.df, by = "indiv", all.x = TRUE, sort = F)
+# dim(rubias.df)
+# rubias.df[1:5, 699:709]
+# 
+# rubias.df <- rubias.df[, !colnames(rubias.df) %in% "indiv"]
+# rubias.df[1:5, 1:10]
+# 
+# rubias.df <-  rubias.df %>% 
+#                   select(alt.ID, everything())
+# rubias.df[1:5, 1:10]
+# colnames(rubias.df)[which(colnames(rubias.df)=="alt.ID")] <- "indiv"
+# rubias.df[1:5, 1:10]
+# 
+# write.table(x = rubias.df, file = "03_results/rubias_output_SNP_renamed.txt", sep = "\t", row.names = FALSE)
+
+# file.copy(from = "03_results/rubias_output_SNP.txt", to = "../amplitools/03_results/cgig_all_rubias.txt", overwrite = T)
+# save.image(file = "03_results/completed_analysis_to_rubias.RData")
+
 
 
 #### Parentage Analysis ####
 # Clear space, and launch amplitools initiator (i.e., 01_scripts/00_initiator.R)
 
 # Using this output, move to "amplitools/01_scripts/ckmr_from_rubias.R"
-ckmr_from_rubias(input.FN = "03_results/cgig_all_rubias.txt", parent_pop = "F0"
+# All filtered loci
+ckmr_from_rubias(input.FN = "03_results/rubias_output_SNP_all_filtered_loci.txt", parent_pop = "F0"
                  , offspring_pop = "F1", cutoff = 5
 )
+
+# Filtered loci and pilot study null allele removed
+ckmr_from_rubias(input.FN = "03_results/rubias_output_SNP_filtered_and_null_pilot_drop.txt", parent_pop = "F0"
+                 , offspring_pop = "F1", cutoff = 5
+)
+
+
 
 ### New items to do: 
 # check number of loci per indiv from rubias file here (amplitools), retain to connect to report
