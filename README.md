@@ -108,3 +108,14 @@ Convert plink files to a useable format for adegenet:
 
 #### l. Population genetic analysis ####
 Read the data into R using the script `01_scripts/01_import_plink_to_genind.R`           
+
+
+
+### 03. OCV23 rhAmp analysis ###
+Copy all CSV files with rhAmp results into `02_input_data`. The following column names are required:    
+`Well`, `Fluor`, `Content`, `Cq`    
+
+Use the Rscript `01_scripts/rhamp_assay_analysis.R` to read in all csv files, format as needed.    
+
+
+
