@@ -3,8 +3,8 @@ Code repository to accompany all CHR8 analyses.
 
 #### Requirements ####
 amplitools      
-simple_pop_stats
-
+simple_pop_stats    
+GEMMA v0.98.5
 
 ### 02. OCV23 analysis ###
 #### a. Set up ####
@@ -16,7 +16,6 @@ cd stacks_workflow
 
 # Copy all raw data into 02-raw
 cp -l ../00_raw_data/*.fastq.gz ./02-raw/
-
 ```
 
 #### b. Check raw data ####
@@ -97,7 +96,6 @@ populations -P "$STACKS_FOLDER" -M "$INFO_FILES_FOLDER"/"$POP_MAP" \
 # Move the output to a new folder to store single-snp data
 mkdir 05-stacks/popn_out_single_snp/
 mv 05-stacks/populations.* 05-stacks/popn_out_single_snp/ 
-
 ```
 
 #### k. Convert output plink data ####
@@ -118,4 +116,23 @@ Copy all CSV files with rhAmp results into `02_input_data`. The following column
 Use the Rscript `01_scripts/rhamp_assay_analysis.R` to read in all csv files, format as needed.    
 
 
+### 04. Genome-wide association study (GWAS) ###
+The `01_scripts/GWAS.R` script does the following using `populations.snps_single-SNP_per_tag_2023-10-23.vcf` and `populations.plink_2023-10-23.map` as input:    
+i. Changes linkage group (LG) RefSeq genome annotations to corresponding chromosome annotations and removes all other contigs in the RefSeq genome    
+ii. Imputes missing genotypes within each family independently using mean imputation    
+iii. Runs the following GWAS models using GEMMA (MAF threshold of 0.05):       
 
+With all families (4 MBP families + VIU family) together:    
+Phenotype (survival; 1-alive, 0-dead) = SNP (fixed) + Population structure (random; covariance matrix = G [genomic relationship] matrix) + error (random; covariance matrix = identity matrix)    
+Phenotype (survival) = SNP (fixed) + Family effect (fixed) + Population structure (random; G matrix) + error (random; identity matrix)    
+
+With all 4 MBP families together:    
+Phenotype (survival) = SNP (fixed) + Population structure (random; G matrix) + error (random; identity matrix)    
+Phenotype (survival) = SNP (fixed) + Family effect (fixed) + Population structure (random; G matrix) + error (random; identity matrix)    
+
+With all families independently:    
+Phenotype (survival) = SNP (fixed) + error (random; identity matrix)  
+
+The SNPs are coded 0, 1, 2 to correspond to reference homozygote, heterozygote, and alternative homozygote genotypes, respectively. Therefore, the models assume the allele are additive (rather than exhibiting dominance, for example). 
+
+iv. Plots GWAS results as Manhattan plots
