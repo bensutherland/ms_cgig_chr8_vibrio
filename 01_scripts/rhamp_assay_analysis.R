@@ -41,6 +41,8 @@ for(i in 1:length(filenames.vec)){
   head(data.df)
   #str(data.df)
   
+  print(length(unique(data.df$Well)))
+  
   # Subset to only the required columns
   data.df <- data.df[, c("Well", "Fluor", "Content", "Cq")]
   head(data.df)
@@ -64,6 +66,10 @@ for(i in 1:length(filenames.vec)){
   head(data_wide.df)
   data_wide.df$geno <- NA
   head(data_wide.df)
+  
+  data_wide.df$full.id <- NA
+  data_wide.df$full.id <- paste0(short_filename.FN, "__", data_wide.df$Well)
+  
   
   #### 02. Inspecting difference between the dyes ####
   # Calculate the difference between VIC and FAM detections
@@ -96,64 +102,123 @@ for(i in 1:length(filenames.vec)){
 }
 
 names(data.list)
-data_wide.df <- data.list[["OCV23_rhAmp_plate_02"]]
-head(data_wide.df)
 
-# Plate 2 has both false positive VIC and false positive FAM
 
-#### 03. Correcting false-positives (VIC) ####
-# Correct for false positive detections of VIC
-head(data_wide.df)
-data_wide.df$Cq.vic.corr <- NA
-str(data_wide.df$Cq.vic.corr)
+#### 03. Join data from all plates ####
+names(data.list)
+head(data.list[[1]])
 
-for(j in 1:nrow(data_wide.df)){
+
+library("dplyr")
+all_plates.df <- dplyr::bind_rows(data.list)
+dim(all_plates.df)
+length(unique(all_plates.df$full.id)) # 394
+
+## All data is present in all_plates.df
+## note: this assumes a constant cutoff for FP designation, not a plate-specific cutoff
+
+head(all_plates.df)
+
+##### 03.2 Data checking #####
+# Before any correction, how much missing data is there? 
+table(is.na(all_plates.df$Cq.fam) & is.na(all_plates.df$Cq.vic))
+noCq_wells.df  <- all_plates.df[is.na(all_plates.df$Cq.fam) & is.na(all_plates.df$Cq.vic), ] 
+write.csv(x = noCq_wells.df, file = "03_results/no_Cq_wells.csv", row.names = F)
+
+#### 04. Correcting false-positives (both dyes) ####
+# Correct for false positive detections of either dye
+#   based on difference (i.e., FAM-VIC Cqs)
+#   note: we are not correcting FP homozygotes yet
+
+head(all_plates.df)
+all_plates.df$Cq.vic.corr <- NA
+all_plates.df$Cq.fam.corr <- NA
+head(all_plates.df)
+
+# Set FP cutoffs
+FP_cutoff_fam.val <-  4
+FP_cutoff_vic.val <- -4
+
+
+# Loop across df to correct Cq vals that are outside FP cutoffs
+for(j in 1:nrow(all_plates.df)){
   
-  if(!is.na(data_wide.df$diff[j])){
+  # If the call has both vic and fam (i.e., a 'diff' value), correct FPs as needed
+  if(!is.na(all_plates.df$diff[j])){
     
-    if(data_wide.df$diff[j] < -5){
+    # If the call is outside of the cutoff for VIC, do not retain the value
+    if(all_plates.df$diff[j] < FP_cutoff_vic.val){
       
-      print("False positive detected, leaving value as NA")
+      print(paste0(j, "- VIC false positive detected, leaving VIC value as NA"))
       
+      # Retain FAM
+      all_plates.df$Cq.fam.corr[j] <- all_plates.df$Cq.fam[j]
+      
+    # If the call is outside of the cutoff for FAM, do not retain the value
+    }else if(all_plates.df$diff[j] > FP_cutoff_fam.val){
+      
+      print(paste0(j, "- FAM false positive detected, leaving FAM value as NA"))
+      
+      # Retain VIC
+      all_plates.df$Cq.vic.corr[j] <- all_plates.df$Cq.vic[j]
+    
+    # If the call is inside both cutoffs, retain the value
     }else{
       
-      data_wide.df$Cq.vic.corr[j] <- data_wide.df$Cq.vic[j]
+      # Retain VIC
+      all_plates.df$Cq.vic.corr[j] <- all_plates.df$Cq.vic[j]
       
+      # Retain FAM
+      all_plates.df$Cq.fam.corr[j] <- all_plates.df$Cq.fam[j]
     }
+      
+  # If the diff is NA, we can't remove potential FPs, so keep both values as is
+    # TODO: set hard cutoff as well (?)
     
   }else{
     
-    data_wide.df$Cq.vic.corr[j] <- data_wide.df$Cq.vic[j]
+    all_plates.df$Cq.vic.corr[j] <- all_plates.df$Cq.vic[j]
+    all_plates.df$Cq.fam.corr[j] <- all_plates.df$Cq.fam[j]
     
   }
   
 }
 
 
-head(data_wide.df)
+head(all_plates.df, n = 20)
+
+
+#### 05. Calling genotypes ####
 
 # Loop over the dataframe, get the difference between Cqs and the derived genotype
-for(j in 1:nrow(data_wide.df)){
+for(j in 1:nrow(all_plates.df)){
   
-  if(is.na(data_wide.df$Cq.fam[j]) & is.na(data_wide.df$Cq.vic.corr[j])){
+  # If both Cq are NA, it is an uncalled sample
+  if(is.na(all_plates.df$Cq.fam[j]) & is.na(all_plates.df$Cq.vic.corr[j])){
     
-    data_wide.df$geno[j] <- "no.geno"
+    all_plates.df$geno[j] <- "no.geno"
     
-  }else if(is.na(data_wide.df$Cq.fam[j]) & !is.na(data_wide.df$Cq.vic.corr[j])){
+  # If VIC is present & FAM is NA, it is a homozygous alternate
+  }else if(is.na(all_plates.df$Cq.fam[j]) & !is.na(all_plates.df$Cq.vic.corr[j])){
     
-    data_wide.df$geno[j] <- "homozyg.alt"
+    all_plates.df$geno[j] <- "homozyg.alt"
     
-  }else if(!is.na(data_wide.df$Cq.fam[j]) & is.na(data_wide.df$Cq.vic.corr[j])){
+  # If FAM is present & VIC is NA, it is a homozygous reference
+  }else if(!is.na(all_plates.df$Cq.fam[j]) & is.na(all_plates.df$Cq.vic.corr[j])){
     
-    data_wide.df$geno[j] <- "homozyg.ref"
+    all_plates.df$geno[j] <- "homozyg.ref"
     
-  }else if(!is.na(data_wide.df$Cq.fam[j]) & !is.na(data_wide.df$Cq.vic.corr[j])){
+  # If both dyes are present, after correction, it is a true heterozygote
+  }else if(!is.na(all_plates.df$Cq.fam[j]) & !is.na(all_plates.df$Cq.vic.corr[j])){
     
-    data_wide.df$geno[j] <- "heterozyg"
+    all_plates.df$geno[j] <- "heterozyg"
     
   }
   
 }
 
-table(data_wide.df$geno)
+table(all_plates.df$geno)
+
+head(all_plates.df)
+
 
