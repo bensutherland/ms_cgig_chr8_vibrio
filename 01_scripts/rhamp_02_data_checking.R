@@ -98,38 +98,4 @@ write.table(x = corrected, file = "03_results/rhAmp_corrected_wells.txt"
 
 #head(all_plates.df, n = 20)
 
-
-#### 05. Calling genotypes ####
-
-# Loop over the dataframe, get the difference between Cqs and the derived genotype
-for(j in 1:nrow(all_plates.df)){
-  
-  # If both Cq are NA, it is an uncalled sample
-  if(is.na(all_plates.df$Cq.fam[j]) & is.na(all_plates.df$Cq.vic.corr[j])){
-    
-    all_plates.df$geno[j] <- "no.geno"
-    
-    # If VIC is present & FAM is NA, it is a homozygous alternate
-  }else if(is.na(all_plates.df$Cq.fam[j]) & !is.na(all_plates.df$Cq.vic.corr[j])){
-    
-    all_plates.df$geno[j] <- "homozyg.alt"
-    
-    # If FAM is present & VIC is NA, it is a homozygous reference
-  }else if(!is.na(all_plates.df$Cq.fam[j]) & is.na(all_plates.df$Cq.vic.corr[j])){
-    
-    all_plates.df$geno[j] <- "homozyg.ref"
-    
-    # If both dyes are present, after correction, it is a true heterozygote
-  }else if(!is.na(all_plates.df$Cq.fam[j]) & !is.na(all_plates.df$Cq.vic.corr[j])){
-    
-    all_plates.df$geno[j] <- "heterozyg"
-    
-  }
-  
-}
-
-table(all_plates.df$geno)
-
-head(all_plates.df)
-
-
+# Next: go to 01_scripts/rhamp_03_call_genos.R
