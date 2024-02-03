@@ -1,5 +1,7 @@
 *.RData
 *~
 *.csv
+*.txt
 *.pdf
+.DS_Store
 
