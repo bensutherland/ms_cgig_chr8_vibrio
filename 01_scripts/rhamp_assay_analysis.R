@@ -15,10 +15,8 @@ rm(current.path)
 # Identify the files
 filenames.vec <- list.files(path = "02_input_data/", pattern = ".csv", full.names = T)
 
-# Isolate only the column-purified plates
-filenames.vec <- head(sort(filenames.vec), n = 5) # The first five plates are column purified
 
-#### 01. Reading in and viewing the data ####
+#### 01. Read in the data, reduce columns, convert to wide format ####
 filename.FN <- NULL; short_filename.FN <- NULL; data.df <- NULL
 data_FAM.df <- NULL; data_VIC.df <- NULL; data_wide.df <- NULL
 data.list <- list()
@@ -37,48 +35,45 @@ for(i in 1:length(filenames.vec)){
   
   # Read in the datafile
   data.df <- read.csv(file = filename.FN, header = T)
-  dim(data.df)
-  head(data.df)
+  #dim(data.df)
+  #head(data.df)
   #str(data.df)
   
-  print(length(unique(data.df$Well)))
+  print(paste0("This plate has ", length(unique(data.df$Well)), " wells."))
   
   # Subset to only the required columns
   data.df <- data.df[, c("Well", "Fluor", "Content", "Cq")]
-  head(data.df)
+  #head(data.df)
   
   # What dyes are present? 
-  unique(data.df$Fluor)
+  print(paste0("Fluorophores present: "))
+  print(unique(data.df$Fluor))
   
-  # Go from long form to horizontal form by separating VIC and FAM into individual df
+  # Convert from long format to wide format
   data_FAM.df <- data.df[data.df$Fluor=="FAM",]
   data_VIC.df <- data.df[data.df$Fluor=="VIC",]
-  dim(data.df)
-  dim(data_FAM.df)
-  dim(data_VIC.df)
-  head(data_VIC.df)
-  head(data_FAM.df)
-  
+
   # Combine VIC and FAM back into a single, wide df
   data_wide.df <- merge(x = data_FAM.df, y = data_VIC.df, by = "Well"
                         , suffixes = c(".fam", ".vic")
-  )
-  head(data_wide.df)
-  data_wide.df$geno <- NA
-  head(data_wide.df)
+                        )
   
+  # Add empty genotype column
+  data_wide.df$geno <- NA
+  
+  # Add full identifier
   data_wide.df$full.id <- NA
   data_wide.df$full.id <- paste0(short_filename.FN, "__", data_wide.df$Well)
   
   
   #### 02. Inspecting difference between the dyes ####
-  # Calculate the difference between VIC and FAM detections
+  # Calculate FAM - VIC
   data_wide.df$diff <- data_wide.df$Cq.fam - data_wide.df$Cq.vic
   head(data_wide.df)
   # note: when one of the dyes is missing (due to genotype, or to a lack of detection)
-  #    , then the diff will be NA
+  #    , then the diff column will be an NA
   
-  # Plot the difference between the dyes, as well as scatterplot both dyes together
+  # When both dyes are present, plot FAM-VIC
   #   note: only considers when both dyes are detected (no homozygotes, no missing data)
   pdf(file = paste0("03_results/Cq_diffs_", short_filename.FN, ".pdf" ), width = 10.5, height = 5)
   par(mfrow=c(1,2))
@@ -89,7 +84,7 @@ for(i in 1:length(filenames.vec)){
   plot(data_wide.df$Cq.fam, data_wide.df$Cq.vic
        , ylab = "Cq. value (VIC)"
        , xlab = "Cq. value (FAM)"
-       , main = short_filename.FN
+       #, main = short_filename.FN
        , las = 1
        
   )
@@ -102,6 +97,8 @@ for(i in 1:length(filenames.vec)){
 }
 
 names(data.list)
+
+head(data.list[[1]])
 
 
 #### 03. Join data from all plates ####
