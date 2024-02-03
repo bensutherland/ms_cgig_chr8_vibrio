@@ -1,10 +1,13 @@
-# Take raw data from rhAmp assay run on a CFX96 instrument
-# Input data should be csv format
-# B. Sutherland, Liam Surry (2024-01-11)
+# Data input and formatting of raw rhAmp assay data (csv format)
+# B. Sutherland, Liam Surry, VIU (initialized 2024-01-11)
 
 #### 00. Front Matter ####
 # Clear space
 # rm(list=ls())
+
+## Load libraries
+#install.packages("dplyr")
+library("dplyr")
 
 ## Set working directory
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
@@ -101,121 +104,5 @@ names(data.list)
 head(data.list[[1]])
 
 
-#### 03. Join data from all plates ####
-names(data.list)
-head(data.list[[1]])
-
-
-library("dplyr")
-all_plates.df <- dplyr::bind_rows(data.list)
-dim(all_plates.df)
-length(unique(all_plates.df$full.id)) # 394
-
-## All data is present in all_plates.df
-## note: this assumes a constant cutoff for FP designation, not a plate-specific cutoff
-
-head(all_plates.df)
-
-##### 03.2 Data checking #####
-# Before any correction, how much missing data is there? 
-table(is.na(all_plates.df$Cq.fam) & is.na(all_plates.df$Cq.vic))
-noCq_wells.df  <- all_plates.df[is.na(all_plates.df$Cq.fam) & is.na(all_plates.df$Cq.vic), ] 
-write.csv(x = noCq_wells.df, file = "03_results/no_Cq_wells.csv", row.names = F)
-
-#### 04. Correcting false-positives (both dyes) ####
-# Correct for false positive detections of either dye
-#   based on difference (i.e., FAM-VIC Cqs)
-#   note: we are not correcting FP homozygotes yet
-
-head(all_plates.df)
-all_plates.df$Cq.vic.corr <- NA
-all_plates.df$Cq.fam.corr <- NA
-head(all_plates.df)
-
-# Set FP cutoffs
-FP_cutoff_fam.val <-  4
-FP_cutoff_vic.val <- -4
-
-
-# Loop across df to correct Cq vals that are outside FP cutoffs
-for(j in 1:nrow(all_plates.df)){
-  
-  # If the call has both vic and fam (i.e., a 'diff' value), correct FPs as needed
-  if(!is.na(all_plates.df$diff[j])){
-    
-    # If the call is outside of the cutoff for VIC, do not retain the value
-    if(all_plates.df$diff[j] < FP_cutoff_vic.val){
-      
-      print(paste0(j, "- VIC false positive detected, leaving VIC value as NA"))
-      
-      # Retain FAM
-      all_plates.df$Cq.fam.corr[j] <- all_plates.df$Cq.fam[j]
-      
-    # If the call is outside of the cutoff for FAM, do not retain the value
-    }else if(all_plates.df$diff[j] > FP_cutoff_fam.val){
-      
-      print(paste0(j, "- FAM false positive detected, leaving FAM value as NA"))
-      
-      # Retain VIC
-      all_plates.df$Cq.vic.corr[j] <- all_plates.df$Cq.vic[j]
-    
-    # If the call is inside both cutoffs, retain the value
-    }else{
-      
-      # Retain VIC
-      all_plates.df$Cq.vic.corr[j] <- all_plates.df$Cq.vic[j]
-      
-      # Retain FAM
-      all_plates.df$Cq.fam.corr[j] <- all_plates.df$Cq.fam[j]
-    }
-      
-  # If the diff is NA, we can't remove potential FPs, so keep both values as is
-    # TODO: set hard cutoff as well (?)
-    
-  }else{
-    
-    all_plates.df$Cq.vic.corr[j] <- all_plates.df$Cq.vic[j]
-    all_plates.df$Cq.fam.corr[j] <- all_plates.df$Cq.fam[j]
-    
-  }
-  
-}
-
-
-head(all_plates.df, n = 20)
-
-
-#### 05. Calling genotypes ####
-
-# Loop over the dataframe, get the difference between Cqs and the derived genotype
-for(j in 1:nrow(all_plates.df)){
-  
-  # If both Cq are NA, it is an uncalled sample
-  if(is.na(all_plates.df$Cq.fam[j]) & is.na(all_plates.df$Cq.vic.corr[j])){
-    
-    all_plates.df$geno[j] <- "no.geno"
-    
-  # If VIC is present & FAM is NA, it is a homozygous alternate
-  }else if(is.na(all_plates.df$Cq.fam[j]) & !is.na(all_plates.df$Cq.vic.corr[j])){
-    
-    all_plates.df$geno[j] <- "homozyg.alt"
-    
-  # If FAM is present & VIC is NA, it is a homozygous reference
-  }else if(!is.na(all_plates.df$Cq.fam[j]) & is.na(all_plates.df$Cq.vic.corr[j])){
-    
-    all_plates.df$geno[j] <- "homozyg.ref"
-    
-  # If both dyes are present, after correction, it is a true heterozygote
-  }else if(!is.na(all_plates.df$Cq.fam[j]) & !is.na(all_plates.df$Cq.vic.corr[j])){
-    
-    all_plates.df$geno[j] <- "heterozyg"
-    
-  }
-  
-}
-
-table(all_plates.df$geno)
-
-head(all_plates.df)
-
+## The data is now prepared for analysis, go to 01_scripts/rhamp_02_data_checking.R
 
