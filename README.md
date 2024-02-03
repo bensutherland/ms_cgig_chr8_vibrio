@@ -116,6 +116,7 @@ Copy all csv files with rhAmp results into `02_input_data`. The following column
 
 Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the following:    
 - format as needed.    
+- #todo: update this section
 
 
 ### 04. Genome-wide association study (GWAS) ###
