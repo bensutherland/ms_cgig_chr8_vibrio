@@ -110,10 +110,12 @@ Read the data into R using the script `01_scripts/01_import_plink_to_genind.R`
 
 
 ### 03. OCV23 rhAmp analysis ###
-Copy all CSV files with rhAmp results into `02_input_data`. The following column names are required:    
+Input files are csv files that are raw output from the genotyping platform (i.e., CFX96 instrument).     
+Copy all csv files with rhAmp results into `02_input_data`. The following column names are required, and should be standard in qPCR machine output:    
 `Well`, `Fluor`, `Content`, `Cq`    
 
-Use the Rscript `01_scripts/rhamp_assay_analysis.R` to read in all csv files, format as needed.    
+Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the following:    
+- format as needed.    
 
 
 ### 04. Genome-wide association study (GWAS) ###
