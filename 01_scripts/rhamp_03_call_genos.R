@@ -42,4 +42,6 @@ write.table(x = table(all_plates.df$geno), file = "03_results/rhAmp_genos.txt"
 
 head(all_plates.df)
 
+save.image(file = "03_results/prepared_rhamp_results.RData")
+
 # Next: go to 01_scripts/rhamp_04_well_to_sample.R
