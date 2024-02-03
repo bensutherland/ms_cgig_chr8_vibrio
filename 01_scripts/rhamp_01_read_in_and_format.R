@@ -16,7 +16,7 @@ rm(current.path)
 filenames.vec <- list.files(path = "02_input_data/", pattern = ".csv", full.names = T)
 
 
-#### 01. Read in the data, reduce columns, convert to wide format ####
+#### Read in the data, reduce columns, convert to wide format ####
 filename.FN <- NULL; short_filename.FN <- NULL; data.df <- NULL
 data_FAM.df <- NULL; data_VIC.df <- NULL; data_wide.df <- NULL
 data.list <- list()
