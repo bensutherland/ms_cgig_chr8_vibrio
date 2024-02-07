@@ -1,5 +1,10 @@
 # ms_cgig_chr8
-Code repository to accompany all CHR8 analyses. 
+Code repository to accompany all CHR8 analyses, which currently includes the following:     
+- wgrs of OsHV-1 exposure survivors (CHR8 families)    
+- ddRADseq of Vibrio challenge survivors (CHR8 families)   
+- rhAmp assay for CHR8 genotypes in Vibrio challenge survivors (CHR8 families)
+- OA exposure of families from crosses at VIU (VIU families)    
+
 
 #### Requirements ####
 amplitools      
