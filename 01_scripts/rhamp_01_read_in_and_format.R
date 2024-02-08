@@ -48,6 +48,9 @@ for(i in 1:length(filenames.vec)){
   data.df <- data.df[, c("Well", "Fluor", "Content", "Cq")]
   #head(data.df)
   
+  # Update NaN to NA
+  data.df$Cq[data.df$Cq=="NaN"] <- NA
+  
   # What dyes are present? 
   print(paste0("Fluorophores present: "))
   print(unique(data.df$Fluor))
