@@ -119,6 +119,8 @@ Input files are csv files that are raw output from the genotyping platform (i.e.
 Copy all csv files with rhAmp results into `02_input_data`. The following column names are required, and should be standard in qPCR machine output:    
 `Well`, `Fluor`, `Content`, `Cq`    
 
+Copy the file `OSU_CHR8_VC_Mapping_Family114-117_2024-01-21_MFrhAmpDNAid.txt` (available from FigShare (#TODO)) into `00_archive`. This will be used to connect the well and plate ID to the sample ID.    
+
 Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the following:    
 - format as needed.    
 - #todo: update this section
