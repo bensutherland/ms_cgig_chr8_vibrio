@@ -42,7 +42,7 @@ data_annot.df <- merge(x = data.df, y = annot.df, by = "full.id", all.x = T)
 head(data_annot.df)
 
 
-write.table(x = data_annot.df, file = "03_results/rhAmp_full_results.txt")
+write.table(x = data_annot.df, file = "03_results/rhAmp_full_results.txt", quote = F, sep = "\t", row.names = F)
 
 
 
