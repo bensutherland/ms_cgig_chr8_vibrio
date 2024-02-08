@@ -1,4 +1,4 @@
-#Get yourself setup
+#Setting Up
 setwd("C:/Users/ereth/Desktop/BIOL_491/rhAmpprocessing")
 getwd()
 install.packages("ggplot2")
@@ -12,11 +12,26 @@ data.df <- read.csv(file = "rhAmp_full_results.csv")
 head(data.df)
 
 data.separate <- separate(data.df, col = Sample, into = c("Sample_family", "day_of_death"), sep = "_D")
-View(data.separate)
+#View(data.separate)
+#Matching with excel mastersheet
+table(data.separate$day_of_death)
+table(paste0(data.separate$Sample_family, "_", data.separate$day_of_death))
+
+data.separate[2,3]
+test <- data.separate[!is.na(data.separate$day_of_death), ]
+test[test$geno!="no.geno",]
+dim(test)
+
 #Remove NA day of death (controls)
 data_subset <- subset(data.separate, day_of_death!= "NA")
 #remove no-geno calls
 data_subset2 <- subset(data_subset, geno!="no.geno")
+
+head(data_subset)
+str(data_subset)
+data_subset$day_of_death <- as.numeric(data_subset$day_of_death)
+boxplot(data_subset$day_of_death ~ data_subset$geno)
+
 
 #gogole rename function for renaming 6_alive
 #geom jitter (points over box or violin plot)
