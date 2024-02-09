@@ -1,15 +1,19 @@
 # ms_cgig_chr8
 Code repository to accompany all CHR8 analyses, which currently includes the following:     
-- wgrs of OsHV-1 exposure survivors (CHR8 families)    
-- ddRADseq of Vibrio challenge survivors (CHR8 families)   
-- rhAmp assay for CHR8 genotypes in Vibrio challenge survivors (CHR8 families)
-- OA exposure of families from crosses at VIU (VIU families)    
+- [wgrs of OsHV-1 exposure survivors (CHR8 families)](#01-wgrs-of-oshv-1-exposure)    
+- [ddRADseq of Vibrio challenge survivors (CHR8 families)](#02-ocv23-analysis)      
+- [rhAmp assay for CHR8 genotypes in Vibrio challenge survivors (CHR8 families)](#03-OCV23-rhAmp-analysis)     
+- [OA exposure of families from crosses at VIU (VIU families)](#04-OA-exposed-families)      
 
 
 #### Requirements ####
 amplitools      
 simple_pop_stats    
 GEMMA v0.98.5
+
+### 01. WGRS of OsHV-1 exposure ###
+(not added yet)
+
 
 ### 02. OCV23 analysis ###
 #### a. Set up ####
@@ -112,21 +116,7 @@ Convert plink files to a useable format for adegenet:
 #### l. Population genetic analysis ####
 Read the data into R using the script `01_scripts/01_import_plink_to_genind.R`           
 
-
-
-### 03. OCV23 rhAmp analysis ###
-Input files are csv files that are raw output from the genotyping platform (i.e., CFX96 instrument).     
-Copy all csv files with rhAmp results into `02_input_data`. The following column names are required, and should be standard in qPCR machine output:    
-`Well`, `Fluor`, `Content`, `Cq`    
-
-Copy the file `OSU_CHR8_VC_Mapping_Family114-117_2024-01-21_MFrhAmpDNAid.txt` (available from FigShare (#TODO)) into `00_archive`. This will be used to connect the well and plate ID to the sample ID.    
-
-Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the following:    
-- format as needed.    
-- #todo: update this section
-
-
-### 04. Genome-wide association study (GWAS) ###
+#### m. Genome-wide association study (GWAS) ####
 The `01_scripts/GWAS.R` script does the following using `populations.snps_single-SNP_per_tag_2023-10-23.vcf` and `populations.plink_2023-10-23.map` as input:    
 i. Changes linkage group (LG) RefSeq genome annotations to corresponding chromosome annotations and removes all other contigs in the RefSeq genome    
 ii. Imputes missing genotypes within each family independently using mean imputation    
@@ -146,3 +136,18 @@ Phenotype (survival) = SNP (fixed) + error (random; identity matrix)
 The SNPs are coded 0, 1, 2 to correspond to reference homozygote, heterozygote, and alternative homozygote genotypes, respectively. Therefore, the models assume the allele are additive (rather than exhibiting dominance, for example). 
 
 iv. Plots GWAS results as Manhattan plots
+
+
+### 03. OCV23 rhAmp analysis ###
+Input files are csv files that are raw output from the genotyping platform (i.e., CFX96 instrument).     
+Copy all csv files with rhAmp results into `02_input_data`. The following column names are required, and should be standard in qPCR machine output:    
+`Well`, `Fluor`, `Content`, `Cq`    
+
+Copy the file `OSU_CHR8_VC_Mapping_Family114-117_2024-01-21_MFrhAmpDNAid.txt` (available from FigShare (#TODO)) into `00_archive`. This will be used to connect the well and plate ID to the sample ID.    
+
+Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the following:    
+- format as needed.    
+- #todo: update this section
+
+
+### 04. OA-exposed families ###
