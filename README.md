@@ -1,9 +1,9 @@
 # ms_cgig_chr8
 Code repository to accompany all CHR8 analyses, which currently includes the following:     
-- [wgrs of OsHV-1 exposure survivors (CHR8 families)](#01-wgrs-of-oshv-1-exposure)    
-- [ddRADseq of Vibrio challenge survivors (CHR8 families)](#02-ocv23-analysis)      
-- [rhAmp assay for CHR8 genotypes in Vibrio challenge survivors (CHR8 families)](#03-OCV23-rhAmp-analysis)     
-- [OA exposure of families from crosses at VIU (VIU families)](#04-OA-exposed-families)      
+- [1. wgrs of OsHV-1 exposure survivors (CHR8 families)](#01-wgrs-of-oshv-1-exposure)    
+- [2. ddRADseq of Vibrio challenge survivors (CHR8 families)](#02-ocv23-analysis)      
+- [3. rhAmp assay for CHR8 genotypes in Vibrio challenge survivors (CHR8 families)](#03-OCV23-rhAmp-analysis)     
+- [4. OA exposure of families from crosses at VIU (VIU families)](#04-OA-exposed-families)      
 
 
 #### Requirements ####
@@ -151,3 +151,7 @@ Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the foll
 
 
 ### 04. OA-exposed families ###
+
+
+
+
