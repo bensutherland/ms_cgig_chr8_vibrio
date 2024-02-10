@@ -151,10 +151,10 @@ Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the foll
 
 
 ### 04. OA-exposed families ###
-Input: VCF from `wgrs_workflow`       
+Put the LD-filtered VCF from `wgrs_workflow` in `02_input_data`       
 
 Use the following RScript to do general population statistics:     
-
+`01_scripts/COARL_01.R`      
 
 
 
