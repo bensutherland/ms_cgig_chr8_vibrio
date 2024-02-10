@@ -6,4 +6,5 @@
 *.pdf
 .DS_Store
 *.swp
+*.vcf
 
