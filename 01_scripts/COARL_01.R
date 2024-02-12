@@ -127,9 +127,3 @@ write.table(x = myFreq, file = "03_results/allele_freq.txt"
 
 
 save.image(file = "03_results/prepared_data.RData")
-
-
-#### 04. Bring in cross information, per cross, per locus, infer offspring AF ####
-# 
-
-
