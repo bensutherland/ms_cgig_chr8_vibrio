@@ -2,10 +2,7 @@
 # B. Sutherland (2024-02-09)
 
 ### Front Matter ####
-# Clean space
-# rm(list=ls())
-
-# Prior to running the following, source simple_pop_stats and choose Pacific oyster
+# Prior to running the following, clear the workspace, source simple_pop_stats and choose Pacific oyster
 
 ## Install and load packages (not included in sps)
 #install.packages("vcfR")
@@ -92,7 +89,11 @@ pca_from_genind(data = my_data.gid, PCs_ret = 4, plot_eigen = T, retain_pca_obj 
 # Run relatedness analysis
 relatedness_calc(data = my_data.gid, datatype = "SNP")
 datatype <- "SNP"
-relatedness_plot(file = "03_results/kinship_analysis_2024-02-11.Rdata", same_pops = FALSE, plot_by = "names"
+
+# Get filename for the latest kinship analysis
+kinship.FN <- head(sort(list.files(path = "03_results/", pattern = "kinship_analysis", full.names = T)), n = 1)
+
+relatedness_plot(file = kinship.FN, same_pops = FALSE, plot_by = "names"
                  , plot_by_group = F)
 
 
@@ -127,3 +128,5 @@ write.table(x = myFreq, file = "03_results/allele_freq.txt"
 
 
 save.image(file = "03_results/prepared_data.RData")
+
+# Move to 01_scripts/COARL_02.R
