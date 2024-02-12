@@ -5,6 +5,10 @@
 # Clear space
 # rm(list=ls())
 
+# Set user variables
+sample_info.FN <- "00_archive/MFrhAmpDNAid_2024-02-12.csv"
+
+
 ## Load libraries
 #install.packages("dplyr")
 library("dplyr")
