@@ -4,6 +4,7 @@
 *.csv
 *.txt
 *.pdf
+*.png
 .DS_Store
 *.swp
 *.vcf
