@@ -14,7 +14,7 @@ library("vcfR")
 
 # Set variables
 genos.FN <- "../ms_cgig_chr8/02_input_data/mpileup_calls_filt_AF_0.05_LD.0.5.50kb_subset_0.01.vcf"
-indiv.FN <- "../ms_cgig_chr8/00_archive/COARL2_parental_genotyping_label_map.txt"
+indiv.FN <- "../ms_cgig_chr8/00_archive/COARL2_parental_genotyping_label_map_2024-02-12.txt"
 cross.FN <- "../ms_cgig_chr8/00_archive/COARL2_crosses_and_phenos.txt"
 
 
@@ -47,10 +47,15 @@ head(inds.df)
 # Data checking
 #cbind(indNames(my_data.gid), inds.df) # this remains in the order of the data
 
+
 #### 02. Load correspondence and rename ####
 # read in correspondence file
 conversion.df <- read.table(file = indiv.FN, header = T, sep = "\t")
 head(conversion.df)
+unique(conversion.df$Oyster.ID)
+
+# Remove the parenthetical information from Oyster.ID, as we will use this for population info
+conversion.df$Oyster.ID <- gsub(pattern = "\\(.*", replacement = "", x = conversion.df$Oyster.ID)
 
 # Convert from tube_label to sample_ID
 head(inds.df)       # this is the ordered identifiers from the data
@@ -59,30 +64,39 @@ head(conversion.df) # this is the correspondence to the true sample IDs
 dim(conversion.df)  # note there are extra lines in addition to COARL project
 
 # Remove other project info from the conversion file
-conversion.df <- conversion.df[grep(pattern = "COARL", x = conversion.df$tube_label), ]
+conversion.df <- conversion.df[grep(pattern = "COARL", x = conversion.df$Tube.label), ]
 
 ordered_conversion.df <- merge(x = inds.df, y = conversion.df
-                          , by.x = "inds.df", by.y = "tube_label", sort = F
+                          , by.x = "inds.df", by.y = "Tube.label", sort = F
                           ) # important to not sort
 
-head(conversion.df) # ordered identifiers 
-tail(conversion.df)
-dim(conversion.df)
+head(ordered_conversion.df) # ordered identifiers 
+tail(ordered_conversion.df)
+dim(ordered_conversion.df)
 
 # Use the ordered identifier to rename samples
-indNames(my_data.gid) <- conversion.df$sample_ID
+indNames(my_data.gid) <- ordered_conversion.df$Sample.ID
 
 # Individual sex
 sex <- gsub(pattern = "_.*", replacement = "", x = indNames(my_data.gid))
 sex <- as.character(sex)
 
-# use sex as population
-pop(my_data.gid) <- sex
+## Set population with sex or family
+
+# Sex
+#pop(my_data.gid) <- sex
+
+# Population
+pop(my_data.gid) <- ordered_conversion.df$Oyster.ID
+unique(pop(my_data.gid))
 
 
 #### 03. Basic analyses ####
-pca_from_genind(data = my_data.gid, PCs_ret = 4, plot_eigen = T, retain_pca_obj = T
-                , plot_allele_loadings = F, width = 15, height = 15, plot_label = T
+pca_from_genind(data = my_data.gid
+                , PCs_ret = 4, plot_eigen = T, retain_pca_obj = T
+                , plot_allele_loadings = F
+                , width = 15, height = 15, plot_label = T
+                , colour_file = NULL, plot_ellipse = F
                 )
 
 
