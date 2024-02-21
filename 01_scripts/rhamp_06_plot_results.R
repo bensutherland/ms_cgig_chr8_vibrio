@@ -38,9 +38,11 @@ rhamp_no_geno$day_of_death <- as.numeric(as.character(rhamp_no_geno$day_of_death
 #Plotting: basic boxplot
 boxplot(rhamp_no_geno$day_of_death ~ rhamp_no_geno$majority.geno, xlab = "Genotype", ylab = "Day_of_Death")
 
+
 #Plotting without survivors 
 rhamp_no_survivors<- rhamp_no_geno[!is.na(rhamp_no_geno$day_of_death) & rhamp_no_geno$day_of_death !="7",]
 boxplot(rhamp_no_survivors$day_of_death ~ rhamp_no_survivors$majority.geno, xlab = "Genotype", ylab = "Day_of_Death(no survivors)")
+
 #Violin plot representation 
 rhamp.violin.no.jitter<- ggplot(data= rhamp_no_geno)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors"))
 rhamp.violin.no.jitter
@@ -55,6 +57,8 @@ rhamp.violin.no.jitter.line
 #Separate data frame into families 
 rhamp_families <- separate(rhamp_no_geno, col = Sample_family, into = c("Project", "family"), sep = "_F")
 head(rhamp_families)
+
+
 #Separate into indiivudal families:
 rhamp_family_114 <-subset(rhamp_families, family == "114")
 rhamp_family_115 <-subset(rhamp_families, family == "115")
@@ -62,21 +66,99 @@ rhamp_family_116 <-subset(rhamp_families, family == "116")
 rhamp_family_117 <-subset(rhamp_families, family == "117")
 
 #Looping to make box plot and violin plot for every family.
+install.packages("gridExtra")
+library(gridExtra)
+install.packages("gridGraphics")
+library(gridGraphics)
+install.packages("cowplot")
+library(cowplot)
+# create an empty list to store the plots
 families <- c(114, 115, 116, 117)
+boxplots <- list()
+violins <- list()
+
+# set the layout of the graphics device for the box plots
+par(mfrow = c(2, 2))
+
 for (f in families) {
+  # subset the data for each family
   rhamp_family <- subset(rhamp_families, family == f)
-  boxplot(rhamp_no_geno$day_of_death ~ rhamp_no_geno$majority.geno, xlab = "Genotype", ylab = "Day_of_Death")
-  tiff(paste0("boxplot_", f, ".tiff"), compression = "lzw")
-  def.off()
   
-  rhamp.violin <- ggplot(data= rhamp_family)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors"))
+  # save and plot the box plot for each family 
+  png(paste0("boxplot_", f, ".png"), width = 6, height = 4, units = "in", res = 300) 
+
+ 
+  boxplot <- ggplot(data = rhamp_family) + geom_boxplot(aes(x = majority.geno, y = day_of_death, fill = majority.geno)) + labs(x = "Genotype", y = "Day of Death") + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 5, fontface = "bold") 
   
-  tiff(paste0("violin_", f, ".tiff"), compression = "lzw")
-  def.off()
+  print(boxplot)
+  graphics.off() 
+  boxplots[[f]] <- boxplot
+  
+  # save and plot the violin plot for each family
+  png(paste0("violin_", f, ".png"), width = 6, height = 4, units = "in", res = 300) 
+  rhamp.violin <- ggplot(data= rhamp_family)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 5, fontface = "bold")
+  print(rhamp.violin) 
+  graphics.off() 
+  
+  # add the violin plot to the list
+  violins[[f]] <- rhamp.violin
 }
 
+#Install purr
+if (!require(purrr)) {
+  install.packages("purrr")
+  library(purrr)
+}
+# remove NULL values from the lists
+boxplots <- purrr::compact(boxplots)
+violins <- purrr::compact(violins)
 
-rhamp.violin.no.jitter<- ggplot(data= rhamp_no_geno)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors"))
+#Combine box plots into one
+tiff("combined_boxplots.tiff", width = 11, height = 9, units = "in", res = 300)
+grid.arrange(grobs = boxplots, nrow = 2, ncol = 2)
+graphics.off()
+
+# Combine all violin plots into one plot and save it as a tiff file
+tiff("combined_violins.tiff", width = 11, height = 9, units = "in", res = 300)
+grid.arrange(grobs = violins, nrow = 2, ncol = 2)
+graphics.off()
+
+
+#######Determine proportion of each type of genotype per family 
+#Make new data frame
+rhamp.prop <- as.data.frame(rhamp_families)
+#Calculate proportions 
+rhamp.prop <- rhamp.prop %>%
+  group_by(family, majority.geno) %>%
+  summarise(count = n()) %>%
+  mutate(prop = count / sum(count))
+#Make bar plot
+geno.prop <- ggplot(rhamp.prop, aes(x = family, y = prop, fill = majority.geno)) + geom_bar(stat = "identity", position = "dodge") + geom_text(aes(label = paste0(round(prop*100, 0), "%")), position = position_dodge(width = 0.9), vjust = -0.25) + scale_y_continuous(labels = scales::percent, limits = c(0, 1)) + ylab("Proportion in Family") + xlab("Family") + labs(fill = "Genotype") + theme_classic()
+geno.prop
+
+######Make bar plot of %Survival and % Mortality for all families including non-mapping + control 
+mortalitybarplot <- read.csv("mortalitybarplot.csv")
+#Convert % to proportions
+mortalitybarplot$survival <- mortalitybarplot$survival / 100
+mortalitybarplot$death <- mortalitybarplot$death / 100
+
+#Switch F118 to Control
+mortalitybarplot$Family[mortalitybarplot$Family == "118"] <- "Control"
+
+#convert to long format
+mort_long <- reshape2::melt(mortalitybarplot, id.vars = "Family", variable.name = "status", value.name = "percent")
+
+#Relabel family as chr
+mort_long$Family <- as.character(mort_long$Family)
+
+#Make plot
+mort_bar <- ggplot(mort_long, aes(x = Family, y = percent, fill = status)) + geom_bar(stat = "identity") + labs(x = "Family", y = "Proportion", fill = "Status") + theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + scale_fill_discrete(name = "Status", labels = c("Survival(%)", "Mortality(%)"))
+
+mort_bar
+
+
+
+
 
 #Skeleton Code
 ####Remove NA day of death (controls)
@@ -88,28 +170,3 @@ rhamp.violin.no.jitter<- ggplot(data= rhamp_no_geno)+ geom_violin(aes(x=majority
 #remove no.geno
 #put line between 6 and 6_alive to indicate survival, 
 #maybe include survival plot -> would have to summarize based on genotype for each day 
-
-
-
-#violin plot
-violin_allfamilies <- ggplot(data = rhamp.separate, aes(x = geno, y = day_of_death, group = geno, fill = geno, colour = geno)) + geom_violin(aes(x = geno, y = day_of_death, group = geno, fill = geno, colour = geno)) + geom_jitter(aes(x= geno, y= day_of_death))
-violin_allfamilies
-
-head(data_subset2)
-
-data_families <- separate(data_subset2, col = Sample_family, into = c("Project", "family"), sep = "_F")
-head(data_families)
-#Separate Individual families
-
-#Individual violin plots
-violin_F114 <- ggplot(data = data_subset_114, aes(x = geno, y = day_of_death, group = geno, fill = geno, colour = geno)) + geom_violin(aes(x = geno, y = day_of_death, group = geno, fill = geno, colour = geno)) + geom_jitter(aes(x= geno, y= day_of_death))
-violin_F114
-violin_F115 <- ggplot(data = data_subset_115, aes(x = geno, y = day_of_death, group = geno, fill = geno, colour = geno)) + geom_violin(aes(x = geno, y = day_of_death, group = geno, fill = geno, colour = geno)) + geom_jitter(aes(x= geno, y= day_of_death))
-violin_F115
-violin_F116 <- ggplot(data = data_subset_116, aes(x = geno, y = day_of_death, group = geno, fill = geno, colour = geno)) + geom_violin(aes(x = geno, y = day_of_death, group = geno, fill = geno, colour = geno)) + geom_jitter(aes(x= geno, y= day_of_death))
-violin_F116
-violin_F117 <- ggplot(data = data_subset_117, aes(x = geno, y = day_of_death, group = geno, fill = geno, colour = geno)) + geom_violin(aes(x = geno, y = day_of_death, group = geno, fill = geno, colour = geno))+ geom_jitter(aes(x= geno, y= day_of_death))
-violin_F117
-
-#boxplot2.0
-boxplottest <- boxplot(data_subset2)
