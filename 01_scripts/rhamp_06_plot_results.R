@@ -90,7 +90,7 @@ for (f in families) {
   rhamp_family <- subset(rhamp_families, family == f)
   
   # save and plot the box plot for each family 
-  png(paste0("boxplot_", f, ".png"), width = 6, height = 4, units = "in", res = 300) 
+  tiff(paste0("boxplot_", f, ".tiff"), width = 6, height = 4, units = "in", res = 300) 
 
  
   boxplot <- ggplot(data = rhamp_family) + geom_boxplot(aes(x = majority.geno, y = day_of_death, fill = majority.geno)) + labs(x = "Genotype", y = "Day of Death") + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 5, fontface = "bold") 
