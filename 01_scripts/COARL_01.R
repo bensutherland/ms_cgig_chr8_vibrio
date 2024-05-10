@@ -1,21 +1,21 @@
 # Import VCF from wgrs_workflow and perform general population statistics
-# B. Sutherland (2024-02-09)
+# B. Sutherland (initialized 2024-02-09)
 
 ### Front Matter ####
-# Prior to running the following, clear the workspace, source simple_pop_stats and choose Pacific oyster
+# prior to running the following, clear the workspace, source simple_pop_stats and choose Pacific oyster
 
-## Install and load packages (not included in sps)
+## Install and load packages
 #install.packages("vcfR")
-
 library("vcfR")
 
-## Info
-# sessionInfo()
-
 # Set variables
-genos.FN <- "../ms_cgig_chr8/02_input_data/mpileup_calls_filt_AF_0.05_LD.0.5.50kb_subset_0.01.vcf"
-indiv.FN <- "../ms_cgig_chr8/00_archive/COARL2_parental_genotyping_label_map_2024-02-12.txt"
-cross.FN <- "../ms_cgig_chr8/00_archive/COARL2_crosses_and_phenos.txt"
+genos.FN <- "../wgrs_workflow_COARL_v.0.2/05_genotyping/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb_subset0.05.vcf"
+indiv.FN <- "../accessory_files/COARL2_parental_genotyping_label_map_2024-02-12.txt"
+cross.FN <- "../accessory_files/COARL2_60Fert_AvgPhenotypeData_2024_04_03.txt"
+
+# User set variables
+#plot_by <- "sex"
+plot_by <- "family"
 
 
 #### 01. Load genotype data and format ####
@@ -44,59 +44,67 @@ inds.df <- paste0(inds.df$project, "_", inds.df$sample.num)
 inds.df <- as.data.frame(inds.df)
 head(inds.df) 
 
-# Data checking
-#cbind(indNames(my_data.gid), inds.df) # this remains in the order of the data
 
-
-#### 02. Load correspondence and rename ####
+#### 02. Load indiv label and sample name correspondence and rename ####
 # read in correspondence file
 conversion.df <- read.table(file = indiv.FN, header = T, sep = "\t")
 head(conversion.df)
 unique(conversion.df$Oyster.ID)
 
+# Remove samples that are not part of the project from the conversion table
+conversion.df <- conversion.df[grep(pattern = "COARL2", x =  conversion.df$Tube.label), ]
+
 # Remove the parenthetical information from Oyster.ID, as we will use this for population info
 conversion.df$Oyster.ID <- gsub(pattern = "\\(.*", replacement = "", x = conversion.df$Oyster.ID)
+table(conversion.df$Oyster.ID)
 
 # Convert from tube_label to sample_ID
 head(inds.df)       # this is the ordered identifiers from the data
 dim(inds.df)
 head(conversion.df) # this is the correspondence to the true sample IDs
-dim(conversion.df)  # note there are extra lines in addition to COARL project
+dim(conversion.df)
 
-# Remove other project info from the conversion file
-conversion.df <- conversion.df[grep(pattern = "COARL", x = conversion.df$Tube.label), ]
-
+# Combine the VCF samples with the sample information
 ordered_conversion.df <- merge(x = inds.df, y = conversion.df
-                          , by.x = "inds.df", by.y = "Tube.label", sort = F
-                          ) # important to not sort
+                          , by.x = "inds.df", by.y = "Tube.label"
+                          , sort = F   # important to not sort
+                          ) 
 
-head(ordered_conversion.df) # ordered identifiers 
-tail(ordered_conversion.df)
+head(cbind(inds.df, ordered_conversion.df)) # order of first two cols should be retained
+tail(cbind(inds.df, ordered_conversion.df)) # order of first two cols should be retained
 dim(ordered_conversion.df)
 
 # Use the ordered identifier to rename samples
 indNames(my_data.gid) <- ordered_conversion.df$Sample.ID
 
-# Individual sex
+# Add individual sex info as column
 sex <- gsub(pattern = "_.*", replacement = "", x = indNames(my_data.gid))
 sex <- as.character(sex)
+ordered_conversion.df$sex <- sex
+rm(sex)
+head(ordered_conversion.df)
 
-## Set population with sex or family
+# Set population with sex or family
+if(plot_by=="sex"){
+ 
+  pop(my_data.gid) <- ordered_conversion.df$sex
+  
+}else if(plot_by=="family"){
+  
+  pop(my_data.gid) <- ordered_conversion.df$Oyster.ID
+  
+}
 
-# Sex
-#pop(my_data.gid) <- sex
-
-# Population
-pop(my_data.gid) <- ordered_conversion.df$Oyster.ID
 unique(pop(my_data.gid))
 
 
-#### 03. Basic analyses ####
+#### 03. Basic exploratory analyses ####
 pca_from_genind(data = my_data.gid
                 , PCs_ret = 4, plot_eigen = T, retain_pca_obj = T
                 , plot_allele_loadings = F
                 , width = 15, height = 15, plot_label = T
-                , colour_file = NULL, plot_ellipse = F
+                , colour_file = NULL
+                , plot_ellipse = F
                 )
 
 
