@@ -1,29 +1,36 @@
 # Infer offspring genotypes based on cross information
-# B. Sutherland (2024-02-11)
+# B. Sutherland (initialized 2024-02-11)
 
 # Requires that 01_scripts/COARL_02.R was already run
 # Clear workspace, launch simple_pop_stats
 
 load("03_results/prepared_data.RData")
 
+obj
+
+# To prepare for AF inference, create genotype dataframe
+geno.df <- obj$tab
+geno.df[1:5,1:5] # these are the sample names that will be used
+
+
 #### 04. Bring in cross information, per cross, per locus, infer offspring AF ####
+# Reporting
+print(paste0("Now inferring offspring AF based on input datafile: ", cross.FN))
+
 # read in crosses info
 cross_and_pheno.df <- read.table(file = cross.FN, header = T, sep = "\t")
-head(cross_and_pheno.df)
-dim(cross_and_pheno.df)
+head(cross_and_pheno.df) # note that indiv names are not matched with the genotypes df
+dim(cross_and_pheno.df) # 102 rows, 11 cols
 
-# match to the genos
-cross_and_pheno.df$Dam <- str_pad(string = cross_and_pheno.df$Dam, width = 2, side = "left", pad = "0")
-cross_and_pheno.df$Sire <- str_pad(string = cross_and_pheno.df$Sire, width = 2, side = "left", pad = "0")
-
-cross_and_pheno.df$Dam  <- paste0("female_", cross_and_pheno.df$Dam)
-cross_and_pheno.df$Sire <- paste0("male_", cross_and_pheno.df$Sire)
-
+# match indiv names from cross info to the geno df
+cross_and_pheno.df$dam <- str_pad(string = cross_and_pheno.df$dam, width = 2, side = "left", pad = "0")
+cross_and_pheno.df$sire <- str_pad(string = cross_and_pheno.df$sire, width = 2, side = "left", pad = "0")
 head(cross_and_pheno.df)
 
-# Create genotype dataframe
-geno.df <- obj$tab
-geno.df[1:5,1:5]
+cross_and_pheno.df$dam  <- paste0("female_", cross_and_pheno.df$dam)
+cross_and_pheno.df$sire <- paste0("male_", cross_and_pheno.df$sire)
+head(cross_and_pheno.df)
+
 
 ### Infer offspring allele frequencies for each family in the cross
 # Create locus dataframe
@@ -40,19 +47,19 @@ for(i in 1:nrow(cross_and_pheno.df)){
   print(i)
   
   # family
-  family <- cross_and_pheno.df[i, "Family"]
+  family <- cross_and_pheno.df[i, "family"]
   
   # dam
-  dam  <- cross_and_pheno.df[i, "Dam"]
+  dam  <- cross_and_pheno.df[i, "dam"]
   
   # sire
-  sire <- cross_and_pheno.df[i, "Sire"]
+  sire <- cross_and_pheno.df[i, "sire"]
   
   # Reporting
-  print(paste0("Family ", family, " is comprised of ", dam, " and ", sire))
+  print(paste0("family ", family, " is comprised of ", dam, " and ", sire))
   
   # Create an empty column for inferred numbers of alt alleles per locus
-  #loci.df <- cbind(loci.df, rep(NA, times = nrow(loci.df)))
+  loci.df <- cbind(loci.df, rep(NA, times = nrow(loci.df)))
   
   # Set the column name for the family
   column_of_interest <- paste0("family_", family, "_a2_ppn")
@@ -76,7 +83,7 @@ for(i in 1:nrow(cross_and_pheno.df)){
   }
   
   # What are the unique genotypes?
-  unique(loci.df[,column_of_interest])
+  unique(loci.df[,column_of_interest]) # note: if missing data was removed, there should be none here
   
   ## Fix the proportion data
   # if any NA, cannot estimate
@@ -111,4 +118,4 @@ loci.df[1:10, ]
 
 save.image(file = "03_results/per_family_inferred_allele_frequency_data.RData")
 
-# Next step will be to conduct the GWAS
+# Move to 01_scripts/COARL_03.R

@@ -115,13 +115,15 @@ datatype <- "SNP"
 # Get filename for the latest kinship analysis
 kinship.FN <- head(sort(list.files(path = "03_results/", pattern = "kinship_analysis", full.names = T)), n = 1)
 
+# Plot all paired relatedness values
 relatedness_plot(file = kinship.FN, same_pops = FALSE, plot_by = "names"
                  , plot_by_group = F)
-
+load(kinship.FN) # loads output
+summary(output$relatedness$ritland)
 
 # Plot MAF distribution (note: keep in mind that the data is LD-filtered)
 my_data.gid
-maf_filt(data = my_data.gid, maf = 0.01)
+maf_filt(data = my_data.gid, maf = 0.05)
 obj <- obj_maf_filt
 
 
