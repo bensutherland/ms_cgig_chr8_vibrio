@@ -178,10 +178,18 @@ Third, use:
 ...this script will:     
 - allow user to set variables (which phenotype to focus on)      
 - prepare genotype, phenotype, and marker files in preparation for gemma (BIMBAM format)
-Output will be gemma inputs.      
+Output will be gemma inputs, saved into `simple_pop_stats/03_results/<your_date-stamped_subdirectory>`.      
 
-After the scripts are run, use gemma to analyze the data as follows:     
+After the above scripts are run, change into the new directory that was created within `simple_pop_stats`, as given as the example below:     
 ```
+cd ../simple_pop_stats/03_results/gemma_run_dw_size_mean_2024-05-14_14h53 
+
+# compute Kinship matrix
+gemma -g ./gemma_geno.txt -p gemma_pheno_dw_size_mean.txt -gk -maf 0.05 -o dw_size
+# note: this will output into an output folder
+
+# association test
+gemma -g gemma_geno.txt -p gemma_pheno_dw_size_mean.txt -k output/dw_size.cXX.txt -n 1 -a gemma_geno_annot.txt -maf 0.05 -lmm 4 -o gwas_dw_size 
 
 ```
 
