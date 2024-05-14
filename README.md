@@ -7,12 +7,14 @@ Code repository to accompany all CHR8 analyses, which currently includes the fol
 
 
 #### Requirements ####
-amplitools      
-simple_pop_stats    
-GEMMA v0.98.5
+[amplitools](https://github.com/bensutherland/amplitools)      
+[simple_pop_stats](https://github.com/bensutherland/simple_pop_stats)    
+[stacks_workflow](https://github.com/enormandeau/stacks_workflow)       
+[wgrs_workflow](https://github.com/bensutherland/wgrs_workflow)        
+[GEMMA](https://github.com/genetics-statistics/GEMMA/tree/master)         
 
 ### 01. WGRS of OsHV-1 exposure ###
-(not added yet)
+Follow `wgrs_workflow`.       
 
 
 ### 02. OCV23 analysis ###
@@ -151,10 +153,37 @@ Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the foll
 
 
 ### 04. OA-exposed families ###
-Put the LD-filtered VCF from `wgrs_workflow` in `02_input_data`       
+Genotype samples using `wgrs_workflow`.     
 
-Use the following RScript to do general population statistics:     
+Put the LD-filtered VCF from `wgrs_workflow` in `ms_cgig_chr8/02_input_data`, then change into the `ms_cgig_chr8` main directory.       
+
+Use the following interactive Rscripts (depend on `simple_pop_stats`):      
 `01_scripts/COARL_01.R`      
+...this script will:      
+- allow user to set variables (VCF file, parent ID file, cross and phenotype file)
+- load the genotype data and update identifiers 
+- prepare a PCA and calculate relatedness of individuals
+- plot allele frequencies of all loci
+Output will be plots of the above, and `03_results/prepared_data.RData`.       
+
+Second, use:       
+`01_scripts/COARL_02.R`     
+...this script will:     
+- bring in cross information (i.e., which dam and sire were used for each family)
+- infer expected offspring allele frequencies based on parental genotypes
+Output will be `03_results/per_family_inferred_allele_frequency_data.RData`      
+
+Third, use:     
+`01_scripts/COARL_03.R`      
+...this script will:     
+- allow user to set variables (which phenotype to focus on)      
+- prepare genotype, phenotype, and marker files in preparation for gemma (BIMBAM format)
+Output will be gemma inputs.      
+
+After the scripts are run, use gemma to analyze the data as follows:     
+```
+
+```
 
 
 
