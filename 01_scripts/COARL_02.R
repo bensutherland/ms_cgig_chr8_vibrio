@@ -1,7 +1,7 @@
 # Infer offspring genotypes based on cross information
 # B. Sutherland (initialized 2024-02-11)
 
-# Requires that 01_scripts/COARL_02.R was already run
+# Requires that 01_scripts/COARL_01.R was already run
 # Clear workspace, launch simple_pop_stats
 
 load("03_results/prepared_data.RData")
@@ -31,6 +31,17 @@ cross_and_pheno.df$dam  <- paste0("female_", cross_and_pheno.df$dam)
 cross_and_pheno.df$sire <- paste0("male_", cross_and_pheno.df$sire)
 head(cross_and_pheno.df)
 
+### Data checking ###
+# Ensure that all individuals that will be called on based on the cross file are present in the genotypic data
+# make sure all parents are in geno.df, or remove the row of the cross and pheno doc
+rownames(geno.df) # this is where the indiv info is
+dim(cross_and_pheno.df)
+cross_and_pheno.df <- cross_and_pheno.df[cross_and_pheno.df$dam %in% rownames(geno.df), ] 
+dim(cross_and_pheno.df)
+cross_and_pheno.df[!(cross_and_pheno.df$sire %in% rownames(geno.df)), c("family", "dam", "sire")] 
+cross_and_pheno.df <- cross_and_pheno.df[cross_and_pheno.df$sire %in% rownames(geno.df), ] 
+dim(cross_and_pheno.df)
+
 
 ### Infer offspring allele frequencies for each family in the cross
 # Create locus dataframe
@@ -40,7 +51,7 @@ rm(loci)
 head(loci.df)
 
 # Set nulls
-family <- NULL; dam <- NULL; column_of_interest <- NULL
+family <- NULL; dam <- NULL; sire <- NULL; column_of_interest <- NULL
 
 for(i in 1:nrow(cross_and_pheno.df)){
   
@@ -70,8 +81,9 @@ for(i in 1:nrow(cross_and_pheno.df)){
   print(head(loci.df))
   
   # Set nulls
-  num.alt <- NULL; mname <- NULL
+  mname <- NULL
   
+  # For each marker, obtain the number of alternate alleles for the ith family
   for(m in 1:nrow(loci.df)){
     
     # Marker name for this iteration
@@ -115,6 +127,11 @@ for(i in 1:nrow(cross_and_pheno.df)){
 
 
 loci.df[1:10, ]
+
+##TODO: 
+# write out the family info used, the geno.df for data checking and preservation
+
+
 
 save.image(file = "03_results/per_family_inferred_allele_frequency_data.RData")
 

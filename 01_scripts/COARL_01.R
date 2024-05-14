@@ -9,7 +9,8 @@
 library("vcfR")
 
 # Set variables
-genos.FN <- "../wgrs_workflow_COARL_v.0.2/05_genotyping/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb_subset0.05.vcf"
+#genos.FN <- "../wgrs_workflow_COARL_v.0.2/05_genotyping/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb_subset0.05.vcf"
+genos.FN <- "../ms_cgig_chr8/02_input_data/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb_subset0.001.vcf"
 indiv.FN <- "../accessory_files/COARL2_parental_genotyping_label_map_2024-02-12.txt"
 cross.FN <- "../accessory_files/COARL2_60Fert_AvgPhenotypeData_2024_04_03.txt"
 
