@@ -12,54 +12,57 @@ library(vcfR)
 library(missMethods)
 library(fastman)
 
-# User set variables
+# Global variables
 input_AF.FN <- "03_results/per_family_inferred_allele_frequency_data.RData"
-plink_map.FN <- "../ms_cgig_chr8/02_input_data/myplink.map"
-input_VCF.FN <- "../ms_cgig_chr8/02_input_data/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb_subset0.001.vcf"
+date <- format(Sys.time(), "%Y-%m-%d_%Hh%M")
 
+# User-set variables
 pheno_of_interest <- "dw_size_mean"
 
+# Prepare an output folder
+output.dir <- paste0("03_results/gemma_run_", pheno_of_interest, "_", date)
+dir.create(path = output.dir)
 
 
-# Load data from previous step
+#### 01. Prepare marker info and genotypes ####
+# Load allele frequency data
 load(input_AF.FN)
 dim(loci.df)
 loci.df[1:5,1:5]
-#loci.df <- loci.df[, grep(pattern = "rep", x = colnames(loci.df), invert = T)]
 
-# Read in VCF
-my_vcf <- read.vcfR(file = input_VCF.FN)
-str(my_vcf@fix)
-my_vcf_info.df <- my_vcf@fix
+# Load marker information that matches genotypes
+my_vcf <- read.vcfR(file = genos.FN)
+my_vcf_info.df <- my_vcf@fix # obtain details on markers
 my_vcf_info.df <- as.data.frame(my_vcf_info.df)
 my_vcf_info.df[1:5,1:5]
-my_vcf_info.df$mname <- paste0(my_vcf_info.df$CHROM, "_", my_vcf_info.df$POS)
-my_vcf_info.df <- my_vcf_info.df[,c("mname", "REF", "ALT")]
+my_vcf_info.df$mname <- paste0(my_vcf_info.df$CHROM, "_", my_vcf_info.df$POS) # create identifier
+my_vcf_info.df <- my_vcf_info.df[,c("mname", "REF", "ALT")] # only keep the required columns
 head(my_vcf_info.df)
-my_vcf_info.df$mname <- gsub(pattern = "\\.", replacement = "_",x = my_vcf_info.df$mname)
+my_vcf_info.df$mname <- gsub(pattern = "\\.", replacement = "_",x = my_vcf_info.df$mname) # update the identifier to match genotypic data
 head(my_vcf_info.df)
 
-# Check concordance
+# Check concordance between the marker info and the genotypes
 nrow(my_vcf_info.df)
 nrow(loci.df)
 length(intersect(x = my_vcf_info.df$mname, y = loci.df$loci)) # OK (some filtered out)
 
-colnames(loci.df) <- gsub(pattern = "_a2_ppn", replacement = "", x = colnames(loci.df))
+colnames(loci.df) <- gsub(pattern = "_a2_ppn", replacement = "", x = colnames(loci.df)) # Remove the allele detail from colnames
 loci.df[1:5,1:5]
 head(my_vcf_info.df)
 
-# Combine the annotation info to the VCF info
+# Combine the marker info and the genotypes
 geno <- merge(x = my_vcf_info.df, y = loci.df, by.x = "mname", by.y = "loci")
-geno[1:5,1:5]
+geno[1:5,1:5] # BIMBAM Format
 
-write.table(x = geno, file = "03_results/gemma_geno.txt", sep = "\t"
+# Write out geno info
+write.table(x = geno, file = paste0(output.dir, "/gemma_geno.txt")
+            , sep = "\t"
             , row.names = F, col.names = F
             , quote = F
             )
 
 
-
-#### FAMILY INFO AND PHENOS
+#### 02. Prepare phenotype information ####
 head(cross_and_pheno.df)
 cross_and_pheno.df$family.id <- paste0("family_", cross_and_pheno.df$family)
 head(cross_and_pheno.df)
@@ -70,22 +73,18 @@ head(geno_order.df)
 
 cross_and_pheno_ordered.df <-        merge(x = geno_order.df, y = cross_and_pheno.df
                                             , by.x = "geno_order.df", by.y = "family.id"
-                                            , sort = F)
+                                            , sort = F
+                                           )
 head(cross_and_pheno_ordered.df)
 pheno <- cross_and_pheno_ordered.df[,pheno_of_interest]
-write.table(x = pheno, file = paste0("03_results/gemma_pheno_", pheno_of_interest, ".txt")
+write.table(x = pheno
+            , file = paste0(output.dir, "/gemma_pheno_", pheno_of_interest, ".txt")
             , quote = F, sep = "\t", row.names = F, col.names = F
             )
 
 
-### Annotation info
+### Marker annotation info
 # first column is SNP id, second column bp position, third column is chr number
-# annot.df <- geno$mname
-# annot.df <- as.data.frame(annot.df)
-# colnames(annot.df)[1] <- "mname"
-# head(annot.df)
-# annot.df <- separate(data = annot.df, col = "mname", into = c("chr", "pos"), sep = "_1_")
-
 annot.df <- my_vcf@fix
 annot.df <- as.data.frame(annot.df)
 head(annot.df)
@@ -117,8 +116,12 @@ annot.df$CHROM <- gsub(pattern = "NC_047568.1", replacement = "Chr8", x = annot.
 
 annot.df <- annot.df[with(annot.df, order(annot.df$CHROM)), ]
 head(annot.df)
-write.table(x = annot.df, file = "03_results/gemma_geno_annot.txt"
+write.table(x = annot.df, file = paste0(output.dir, "/gemma_geno_annot.txt")
             , sep = "\t", row.names = F, col.names = F, quote = F
             )
 
+# Reporting
+print(paste0("Use the output data in ", output.dir, " with gemma to analyze GWAS."))
+
+# Next: use gemma to analyze data
 
