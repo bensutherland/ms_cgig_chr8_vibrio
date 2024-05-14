@@ -8,4 +8,8 @@
 .DS_Store
 *.swp
 *.vcf
+*.log
+*.map
+*.nosex
+*.ped
 
