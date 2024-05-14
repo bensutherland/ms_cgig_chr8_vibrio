@@ -109,19 +109,19 @@ for(i in 1:nrow(cross_and_pheno.df)){
   loci.df[, column_of_interest] <- gsub(pattern = "0__0", replacement = "0", x = loci.df[, column_of_interest])
   
   # One parent has one alt allele
-  loci.df[, column_of_interest] <- gsub(pattern = "0__1|1__0", replacement = "0.25", x = loci.df[, column_of_interest])
+  loci.df[, column_of_interest] <- gsub(pattern = "0__1|1__0", replacement = "0.5", x = loci.df[, column_of_interest])
   
   # Both parents have one alt allele
-  loci.df[, column_of_interest] <- gsub(pattern = "1__1", replacement = "0.5", x = loci.df[, column_of_interest])
+  loci.df[, column_of_interest] <- gsub(pattern = "1__1", replacement = "1", x = loci.df[, column_of_interest])
   
   # One parent has two alt allele, one parent has no alt alleles
-  loci.df[, column_of_interest] <- gsub(pattern = "0__2|2__0", replacement = "0.5", x = loci.df[, column_of_interest])
+  loci.df[, column_of_interest] <- gsub(pattern = "0__2|2__0", replacement = "1", x = loci.df[, column_of_interest])
   
   # One parent has two alt alleles and one parent has one alt allele
-  loci.df[, column_of_interest] <- gsub(pattern = "2__1|1__2", replacement = "0.75", x = loci.df[, column_of_interest])
+  loci.df[, column_of_interest] <- gsub(pattern = "2__1|1__2", replacement = "1.5", x = loci.df[, column_of_interest])
   
   # Both parents have two alt alleles
-  loci.df[, column_of_interest] <- gsub(pattern = "2__2", replacement = "1", x = loci.df[, column_of_interest])
+  loci.df[, column_of_interest] <- gsub(pattern = "2__2", replacement = "2", x = loci.df[, column_of_interest])
   
 }
 
