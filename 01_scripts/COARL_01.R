@@ -9,8 +9,9 @@
 library("vcfR")
 
 # Set variables
-#genos.FN <- "../wgrs_workflow_COARL_v.0.2/05_genotyping/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb_subset0.05.vcf"
-genos.FN <- "../ms_cgig_chr8/02_input_data/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb_subset0.001.vcf"
+genos.FN <- "../ms_cgig_chr8/02_input_data/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb.vcf"
+#genos.FN <- "../ms_cgig_chr8/02_input_data/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb_subset0.05.vcf"
+#genos.FN <- "../ms_cgig_chr8/02_input_data/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb_subset0.001.vcf"
 indiv.FN <- "../accessory_files/COARL2_parental_genotyping_label_map_2024-02-12.txt"
 cross.FN <- "../accessory_files/COARL2_60Fert_AvgPhenotypeData_2024_04_03.txt"
 
@@ -23,6 +24,8 @@ plot_by <- "family"
 # read in vcf
 my_data.vcf <- read.vcfR(file = genos.FN)
 my_data.vcf
+
+gc()
 
 # convert vcf to genind
 my_data.gid <- vcfR2genind(x = my_data.vcf)
@@ -110,17 +113,17 @@ pca_from_genind(data = my_data.gid
 
 
 # Run relatedness analysis
-relatedness_calc(data = my_data.gid, datatype = "SNP")
-datatype <- "SNP"
+#relatedness_calc(data = my_data.gid, datatype = "SNP")
+#datatype <- "SNP"
 
 # Get filename for the latest kinship analysis
-kinship.FN <- head(sort(list.files(path = "03_results/", pattern = "kinship_analysis", full.names = T)), n = 1)
+#kinship.FN <- head(sort(list.files(path = "03_results/", pattern = "kinship_analysis", full.names = T)), n = 1)
 
 # Plot all paired relatedness values
-relatedness_plot(file = kinship.FN, same_pops = FALSE, plot_by = "names"
-                 , plot_by_group = F)
-load(kinship.FN) # loads output
-summary(output$relatedness$ritland)
+# relatedness_plot(file = kinship.FN, same_pops = FALSE, plot_by = "names"
+#                  , plot_by_group = F)
+# load(kinship.FN) # loads output
+# summary(output$relatedness$ritland)
 
 # Plot MAF distribution (note: keep in mind that the data is LD-filtered)
 my_data.gid

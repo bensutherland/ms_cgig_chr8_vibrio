@@ -17,7 +17,12 @@ input_AF.FN <- "03_results/per_family_inferred_allele_frequency_data.RData"
 date <- format(Sys.time(), "%Y-%m-%d_%Hh%M")
 
 # User-set variables
-pheno_of_interest <- "dw_size_mean"
+#pheno_of_interest <- "dw_size_mean"
+#pheno_of_interest <- "dw_per_d_tot"
+#pheno_of_interest <- "dw_per_d_perf"
+#pheno_of_interest <- "sw_per_d_perf"
+#pheno_of_interest <- "dw_minus_sw_size_mean"
+pheno_of_interest <- "sw_size_mean"
 
 # Prepare an output folder
 output.dir <- paste0("03_results/gemma_run_", pheno_of_interest, "_", date)
@@ -76,7 +81,15 @@ cross_and_pheno_ordered.df <-        merge(x = geno_order.df, y = cross_and_phen
                                             , sort = F
                                            )
 head(cross_and_pheno_ordered.df)
+
+# New calculation
+cross_and_pheno_ordered.df$dw_minus_sw_size_mean <- cross_and_pheno_ordered.df$dw_size_mean - cross_and_pheno_ordered.df$sw_size_mean
+
+
+### TODO: this is where we could keep more than one pheno of interest if we wanted ###
 pheno <- cross_and_pheno_ordered.df[,pheno_of_interest]
+
+
 write.table(x = pheno
             , file = paste0(output.dir, "/gemma_pheno_", pheno_of_interest, ".txt")
             , quote = F, sep = "\t", row.names = F, col.names = F
@@ -101,17 +114,18 @@ dim(annot.df)
 head(annot.df)
 annot.df <- annot.df[,c("mname", "POS", "CHROM")] # put in required order
 
-# ADJUST TO CHR IDS IF WANT (based on Konstantin's GWAS.R script)
-annot.df$CHROM <- gsub(pattern = "NC_047559.1", replacement = "Chr7", x = annot.df$CHROM)
-annot.df$CHROM <- gsub(pattern = "NC_047560.1", replacement = "Chr1", x = annot.df$CHROM)
-annot.df$CHROM <- gsub(pattern = "NC_047561.1", replacement = "Chr9", x = annot.df$CHROM)
-annot.df$CHROM <- gsub(pattern = "NC_047562.1", replacement = "Chr6", x = annot.df$CHROM)
-annot.df$CHROM <- gsub(pattern = "NC_047563.1", replacement = "Chr3", x = annot.df$CHROM)
-annot.df$CHROM <- gsub(pattern = "NC_047564.1", replacement = "Chr2", x = annot.df$CHROM)
-annot.df$CHROM <- gsub(pattern = "NC_047565.1", replacement = "Chr4", x = annot.df$CHROM)
-annot.df$CHROM <- gsub(pattern = "NC_047566.1", replacement = "Chr5", x = annot.df$CHROM)
+# ADJUST TO CHR IDS IF WANT (based on Konstantin Divilov's GWAS.R script)
+# https://github.com/kdivilov/Aquaculture_2023/blob/main/GWAS.R
+annot.df$CHROM <- gsub(pattern = "NC_047559.1", replacement = "Chr07", x = annot.df$CHROM)
+annot.df$CHROM <- gsub(pattern = "NC_047560.1", replacement = "Chr01", x = annot.df$CHROM)
+annot.df$CHROM <- gsub(pattern = "NC_047561.1", replacement = "Chr09", x = annot.df$CHROM)
+annot.df$CHROM <- gsub(pattern = "NC_047562.1", replacement = "Chr06", x = annot.df$CHROM)
+annot.df$CHROM <- gsub(pattern = "NC_047563.1", replacement = "Chr03", x = annot.df$CHROM)
+annot.df$CHROM <- gsub(pattern = "NC_047564.1", replacement = "Chr02", x = annot.df$CHROM)
+annot.df$CHROM <- gsub(pattern = "NC_047565.1", replacement = "Chr04", x = annot.df$CHROM)
+annot.df$CHROM <- gsub(pattern = "NC_047566.1", replacement = "Chr05", x = annot.df$CHROM)
 annot.df$CHROM <- gsub(pattern = "NC_047567.1", replacement = "Chr10", x = annot.df$CHROM)
-annot.df$CHROM <- gsub(pattern = "NC_047568.1", replacement = "Chr8", x = annot.df$CHROM)
+annot.df$CHROM <- gsub(pattern = "NC_047568.1", replacement = "Chr08", x = annot.df$CHROM)
 #table(annot.df$CHROM)
 
 annot.df <- annot.df[with(annot.df, order(annot.df$CHROM)), ]
@@ -122,6 +136,8 @@ write.table(x = annot.df, file = paste0(output.dir, "/gemma_geno_annot.txt")
 
 # Reporting
 print(paste0("Use the output data in ", output.dir, " with gemma to analyze GWAS."))
+#TODO: the below is an issue, because it overwrites previous, should either add pheno to name or drop
+#save.image(file = "03_results/finalized_gemma_inputs_completed.RData")
 
 # Next: use gemma to analyze data
 
