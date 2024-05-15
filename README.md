@@ -198,5 +198,11 @@ gemma -g gemma_geno.txt -p gemma_pheno_dw_size_mean.txt -k output/dw_size.cXX.tx
 
 ```
 
+Next, use:     
+`01_scripts/COARL_04.R`      
+...this script will:     
+- allow user to choose the gemma result folder and file
+- load gemma results and view distribution of p-values
+- generate Manhattan plot based on gemma output
 
 
