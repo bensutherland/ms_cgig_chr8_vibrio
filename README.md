@@ -157,6 +157,11 @@ Genotype samples using `wgrs_workflow`.
 
 Put the LD-filtered VCF from `wgrs_workflow` in `ms_cgig_chr8/02_input_data`, then change into the `ms_cgig_chr8` main directory.       
 
+Note: will need to convert the bcf to a vcf file, via:    
+`bcftools view 02_input_data/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb.bcf  -Ov -o 02_input_data/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb.vcf`       
+
+Note: you may be using a subset version of a VCF file here to test out the pipeline (e.g., 5% of total lines).     
+
 Use the following interactive Rscripts (depend on `simple_pop_stats`):      
 `01_scripts/COARL_01.R`      
 ...this script will:      
