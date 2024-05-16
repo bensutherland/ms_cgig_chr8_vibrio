@@ -69,7 +69,7 @@ geno_sim <- matrix(data = NA, nrow = nrow(cross.df), ncol = ncol(geno.df))
 dim(geno_sim)
 str(geno_sim)
 
-rownames(geno_sim) = cross.df$family # each row is a family
+rownames(geno_sim) = paste0("family_", cross.df$family) # each row is a family
 colnames(geno_sim) = colnames(geno.df) # each column is a locus
 
 # Use apply to run simulate_cross per row based on the genotypes of the dam and sire for each family
@@ -164,10 +164,28 @@ for(i in 1:nrow(cross.df)){
 # }
 #### /END/ OLD METHOD ####
 
-loci.df[1:10, ]
+# Observe output
+dim(geno_sim)
+geno_sim[1:5, 1:5]
 
-##TODO: 
-# write out the family info used, the geno.df for data checking and preservation
+# Save out the input and output for retrospect
+head(cross.df)
+geno.df[1:5, 1:5]
+geno_sim[1:5, 1:5]
+
+
+write.table(x = cross.df, file = "03_results/cross_dataframe_used.txt", quote = F
+            , sep = "\t", row.names = F, col.names = T
+            )
+
+write.table(x = geno.df, file = "03_results/parental_genotype_dataframe_used.txt", quote = F
+            , sep = "\t", row.names = T, col.names = NA # needed to not offset the df
+)
+
+write.table(x = geno_sim, file = "03_results/offspring_simulated.txt", quote = F
+            , sep = "\t", row.names = T, col.names = NA
+)
+
 
 save.image(file = "03_results/per_family_inferred_allele_frequency_data.RData")
 
