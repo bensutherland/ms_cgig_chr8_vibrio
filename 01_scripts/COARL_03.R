@@ -17,12 +17,12 @@ input_AF.FN <- "03_results/per_family_inferred_allele_frequency_data.RData"
 date <- format(Sys.time(), "%Y-%m-%d_%Hh%M")
 
 # User-set variables
-#pheno_of_interest <- "dw_size_mean"
+pheno_of_interest <- "dw_size_mean"
 #pheno_of_interest <- "dw_per_d_tot"
 #pheno_of_interest <- "dw_per_d_perf"
 #pheno_of_interest <- "sw_per_d_perf"
 #pheno_of_interest <- "dw_minus_sw_size_mean"
-pheno_of_interest <- "sw_size_mean"
+#pheno_of_interest <- "sw_size_mean"
 
 # Prepare an output folder
 output.dir <- paste0("03_results/gemma_run_", pheno_of_interest, "_", date)
@@ -32,6 +32,7 @@ dir.create(path = output.dir)
 #### 01. Prepare marker info and genotypes ####
 # Load allele frequency data
 load(input_AF.FN)
+loci.df <- geno_sim
 dim(loci.df)
 loci.df[1:5,1:5]
 
@@ -49,14 +50,20 @@ head(my_vcf_info.df)
 # Check concordance between the marker info and the genotypes
 nrow(my_vcf_info.df)
 nrow(loci.df)
-length(intersect(x = my_vcf_info.df$mname, y = loci.df$loci)) # OK (some filtered out)
-
-colnames(loci.df) <- gsub(pattern = "_a2_ppn", replacement = "", x = colnames(loci.df)) # Remove the allele detail from colnames
+length(intersect(x = my_vcf_info.df$mname, y = colnames(loci.df))) # OK (some filtered out)
+colnames(loci.df) <- gsub(pattern = "\\.1", replacement = "", x = colnames(loci.df)) # Remove the allele detail from colnames
+length(intersect(x = my_vcf_info.df$mname, y = colnames(loci.df))) # OK (some filtered out)
 loci.df[1:5,1:5]
 head(my_vcf_info.df)
 
+# Prepare geno data
+gemma_geno_input.df <- t(loci.df)
+gemma_geno_input.df[1:5,1:5]
+gemma_geno_input.df <- as.data.frame(gemma_geno_input.df)
+gemma_geno_input.df$loci <- rownames(gemma_geno_input.df)
+
 # Combine the marker info and the genotypes
-geno <- merge(x = my_vcf_info.df, y = loci.df, by.x = "mname", by.y = "loci")
+geno <- merge(x = my_vcf_info.df, y = gemma_geno_input.df, by.x = "mname", by.y = "loci")
 geno[1:5,1:5] # BIMBAM Format
 
 # Write out geno info
@@ -72,7 +79,7 @@ head(cross_and_pheno.df)
 cross_and_pheno.df$family.id <- paste0("family_", cross_and_pheno.df$family)
 head(cross_and_pheno.df)
 
-geno_order.df <- colnames(loci.df)[2:ncol(loci.df)]
+geno_order.df <- rownames(loci.df)
 geno_order.df <- as.data.frame(geno_order.df)
 head(geno_order.df)
 
@@ -81,14 +88,15 @@ cross_and_pheno_ordered.df <-        merge(x = geno_order.df, y = cross_and_phen
                                             , sort = F
                                            )
 head(cross_and_pheno_ordered.df)
+dim(cross_and_pheno_ordered.df)
+dim(cross_and_pheno.df)
 
 # New calculation
 cross_and_pheno_ordered.df$dw_minus_sw_size_mean <- cross_and_pheno_ordered.df$dw_size_mean - cross_and_pheno_ordered.df$sw_size_mean
 
 
 ### TODO: this is where we could keep more than one pheno of interest if we wanted ###
-pheno <- cross_and_pheno_ordered.df[,pheno_of_interest]
-
+pheno <- cross_and_pheno_ordered.df[, pheno_of_interest]
 
 write.table(x = pheno
             , file = paste0(output.dir, "/gemma_pheno_", pheno_of_interest, ".txt")

@@ -10,8 +10,9 @@ library(fastman)
 
 
 # User set variables
-# gemma_result_dir <- "03_results/gemma_run_dw_size_mean_2024-05-15_10h13/output"
-# gemma_result.FN <- "gwas_dw_size.assoc.txt"
+gemma_result_dir <- "03_results/gemma_run_dw_size_mean_2024-05-16_14h48/output"
+gemma_result.FN <- "gwas_dw_size.assoc.txt"
+pheno <- "dw_size_mean"
 
 # gemma_result_dir <- "03_results/gemma_run_dw_per_d_tot_2024-05-15_11h00/output"
 # gemma_result.FN <- "gwas_dw_per_d_tot.assoc.txt"
@@ -27,9 +28,9 @@ library(fastman)
 # gemma_result.FN <- "gemma_gwas_prepared.assoc.txt"
 # pheno <- "dw_minus_sw_size_mean"
 
-gemma_result_dir <- "03_results/gemma_run_sw_size_mean_2024-05-15_11h54/output"
-gemma_result.FN <- "gemma_gwas_prepared.assoc.txt"
-pheno <- "sw_size_mean"
+# gemma_result_dir <- "03_results/gemma_run_sw_size_mean_2024-05-15_11h54/output"
+# gemma_result.FN <- "gemma_gwas_prepared.assoc.txt"
+# pheno <- "sw_size_mean"
 
 
 p_val <- "p_wald"
