@@ -17,8 +17,8 @@ input_AF.FN <- "03_results/per_family_inferred_allele_frequency_data.RData"
 date <- format(Sys.time(), "%Y-%m-%d_%Hh%M")
 
 # User-set variables
-pheno_of_interest <- "dw_size_mean"
-#pheno_of_interest <- "dw_per_d_tot"
+#pheno_of_interest <- "dw_size_mean"
+pheno_of_interest <- "dw_per_d_tot"
 #pheno_of_interest <- "dw_per_d_perf"
 #pheno_of_interest <- "sw_per_d_perf"
 #pheno_of_interest <- "dw_minus_sw_size_mean"

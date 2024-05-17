@@ -14,8 +14,9 @@ gemma_result_dir <- "03_results/gemma_run_dw_size_mean_2024-05-16_14h48/output"
 gemma_result.FN <- "gwas_dw_size.assoc.txt"
 pheno <- "dw_size_mean"
 
-# gemma_result_dir <- "03_results/gemma_run_dw_per_d_tot_2024-05-15_11h00/output"
-# gemma_result.FN <- "gwas_dw_per_d_tot.assoc.txt"
+# gemma_result_dir <- "03_results/gemma_run_dw_per_d_tot_2024-05-17_11h04/output"
+# gemma_result.FN <- "gwas_per_d_tot.assoc.txt"
+# pheno <- "dw_per_d_tot"
 
 # gemma_result_dir <- "03_results/gemma_run_dw_per_d_perf_2024-05-15_11h21/output"
 # gemma_result.FN <- "gemma_gwas_prepared.assoc.txt"
@@ -39,7 +40,7 @@ p_val <- "p_wald"
 
 
 # Load gemma result
-gemma_gwas = read.table(paste0(gemma_result_dir, "/", gemma_result.FN), header = T)
+gemma_gwas <- read.table(paste0(gemma_result_dir, "/", gemma_result.FN), header = T)
 head(gemma_gwas)
 
 # Sort by chr
@@ -66,7 +67,7 @@ fastman(gemma_gwas
         , p=p_val
         , genomewideline = -log10(0.05/nrow(gemma_gwas))
         , suggestiveline = NULL
-        , cex=1
+        , cex=0.7
         , cex.lab=1
         , cex.axis=1
         , main=pheno
