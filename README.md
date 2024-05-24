@@ -7,12 +7,14 @@ Code repository to accompany all CHR8 analyses, which currently includes the fol
 
 
 #### Requirements ####
-amplitools      
-simple_pop_stats    
-GEMMA v0.98.5
+[amplitools](https://github.com/bensutherland/amplitools)      
+[simple_pop_stats](https://github.com/bensutherland/simple_pop_stats)    
+[stacks_workflow](https://github.com/enormandeau/stacks_workflow)       
+[wgrs_workflow](https://github.com/bensutherland/wgrs_workflow)        
+[GEMMA](https://github.com/genetics-statistics/GEMMA/tree/master)         
 
 ### 01. WGRS of OsHV-1 exposure ###
-(not added yet)
+Follow `wgrs_workflow`.       
 
 
 ### 02. OCV23 analysis ###
@@ -151,10 +153,56 @@ Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the foll
 
 
 ### 04. OA-exposed families ###
-Put the LD-filtered VCF from `wgrs_workflow` in `02_input_data`       
+Genotype samples using `wgrs_workflow`.     
 
-Use the following RScript to do general population statistics:     
+Put the LD-filtered VCF from `wgrs_workflow` in `ms_cgig_chr8/02_input_data`, then change into the `ms_cgig_chr8` main directory.       
+
+Note: will need to convert the bcf to a vcf file, via:    
+`bcftools view 02_input_data/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb.bcf  -Ov -o 02_input_data/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.001_AF_0.05_LD0.5w50kb.vcf`       
+
+Note: you may be using a subset version of a VCF file here to test out the pipeline (e.g., 5% of total lines).     
+
+Use the following interactive Rscripts (depend on `simple_pop_stats`):      
 `01_scripts/COARL_01.R`      
+...this script will:      
+- allow user to set variables (VCF file, parent ID file, cross and phenotype file)
+- load the genotype data and update identifiers 
+- prepare a PCA and calculate relatedness of individuals
+- plot allele frequencies of all loci
+Output will be plots of the above, and `03_results/prepared_data.RData`.       
 
+Second, use:       
+`01_scripts/COARL_02.R`     
+...this script will:     
+- bring in cross information (i.e., which dam and sire were used for each family)
+- infer expected offspring allele frequencies based on parental genotypes
+Output will be `03_results/per_family_inferred_allele_frequency_data.RData`      
+
+Third, use:     
+`01_scripts/COARL_03.R`      
+...this script will:     
+- allow user to set variables (which phenotype to focus on)      
+- prepare genotype, phenotype, and marker files in preparation for gemma (BIMBAM format)
+Output will be gemma inputs, saved into `simple_pop_stats/03_results/<your_date-stamped_subdirectory>`.      
+
+After the above scripts are run, change into the new directory that was created within `simple_pop_stats`, as given as the example below:     
+```
+cd ../simple_pop_stats/03_results/gemma_run_dw_size_mean_2024-05-14_14h53 
+
+# compute Kinship matrix
+gemma -g ./gemma_geno.txt -p gemma_pheno_dw_size_mean.txt -gk -maf 0.05 -o dw_size
+# note: this will output into an output folder
+
+# association test
+gemma -g gemma_geno.txt -p gemma_pheno_dw_size_mean.txt -k output/dw_size.cXX.txt -n 1 -a gemma_geno_annot.txt -maf 0.05 -lmm 4 -o gwas_dw_size 
+
+```
+
+Next, use:     
+`01_scripts/COARL_04.R`      
+...this script will:     
+- allow user to choose the gemma result folder and file
+- load gemma results and view distribution of p-values
+- generate Manhattan plot based on gemma output
 
 
