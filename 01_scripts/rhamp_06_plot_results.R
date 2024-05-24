@@ -2,16 +2,17 @@
 setwd("C:/Users/ereth/Desktop/BIOL_491/rhAmpprocessing/03_results/")
 getwd()
 install.packages("ggplot2")
-library(ggplot2)
 install.packages("tidyr")
-library(tidyr)
 install.packages("dplyr")
-library(dplyr)
 install.packages("gridExtra")
-library(gridExtra)
 install.packages("gridGraphics")
-library(gridGraphics)
 install.packages("cowplot")
+
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(gridGraphics)
+library(gridExtra)
 library(cowplot)
 
 #import data
@@ -60,9 +61,12 @@ rhamp.violin.jitter
 rhamp.violin.no.jitter.line<- ggplot(data= rhamp_no_geno)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + geom_hline(aes(yintercept = 6.01), colour = "black")+ annotate(geom="text", x=2, y=6.3, label="Survivors", color = "black")  + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors"))
 rhamp.violin.no.jitter.line
 #Per family plotting 
+
 #Separate data frame into families 
 rhamp_families <- separate(rhamp_no_geno, col = Sample_family, into = c("Project", "family"), sep = "_F")
 head(rhamp_families)
+#Reorder genotypes
+rhamp_families$majority.geno <- factor(rhamp_families$majority.geno, levels = c ("homo.ref", "het", "homo.alt"))
 
 rhamp_families <- rhamp_families %>%
   mutate(Mortality = ifelse(`day_of_death` %in% 3:6, 1, 0))
@@ -90,10 +94,10 @@ for (f in families) {
   rhamp_family <- subset(rhamp_families, family == f)
   
   # save and plot the box plot for each family 
-  tiff(paste0("boxplot_", f, ".tiff"), width = 6, height = 4, units = "in", res = 300) 
+  tiff(paste0("boxplot_", f, ".tiff"), width =8.95275591, height = 10.102322, units = "in", res = 300) 
 
  
-  boxplot <- ggplot(data = rhamp_family) + geom_boxplot(aes(x = majority.geno, y = day_of_death, fill = majority.geno)) + labs(x = "Genotype", y = "Day of Death") + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 5, fontface = "bold") 
+  boxplot <- ggplot(data = rhamp_family) + geom_boxplot(aes(x = majority.geno, y = day_of_death, fill = majority.geno)) + labs(x = "Genotype", y = "Day of Death") + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + theme(axis.text = element_text(size = 28),axis.title = element_text(size = 22),legend.key.size = unit(4, 'cm'),legend.title = element_text(size = 22),legend.text = element_text(size = 22), legend.position = "none") + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 15, fontface = "bold") 
   
   print(boxplot)
   graphics.off() 
@@ -101,7 +105,7 @@ for (f in families) {
   
   # save and plot the violin plot for each family
   png(paste0("violin_", f, ".png"), width = 6, height = 4, units = "in", res = 300) 
-  rhamp.violin <- ggplot(data= rhamp_family)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 5, fontface = "bold")
+  rhamp.violin <- ggplot(data= rhamp_family)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + theme(axis.text = element_text(size = 18)) + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 15, fontface = "bold")
   print(rhamp.violin) 
   graphics.off() 
   
@@ -156,7 +160,7 @@ for (name in names(families)) {
   p <- ggplot(count_data, aes(x=majority.geno, y=Count, fill=Mortality)) +
     geom_bar(stat="identity", position=position_dodge()) +
     labs(x="Genotype", y="Count", fill="Mortality") +
-    theme_minimal() + ggtitle(paste("F", name, sep=""))
+    theme_classic() + ggtitle(paste("F", name, sep=""))
   
   # Add the plot to the list
   plot_list[[name]] <- p
@@ -166,7 +170,7 @@ for (name in names(families)) {
 combined_plot <- do.call(grid.arrange, c(plot_list, ncol=2))
 
 # Save the combined plot as a TIFF file
-ggsave("combined_plot.tiff", combined_plot, width = 11, height = 9)
+ggsave("combined_plot123.tiff", combined_plot, width = 11, height = 9)
 
 
 #######Determine proportion of each type of genotype per family 
@@ -178,7 +182,7 @@ rhamp.prop <- rhamp.prop %>%
   summarise(count = n()) %>%
   mutate(prop = count / sum(count))
 #Make bar plot
-geno.prop <- ggplot(rhamp.prop, aes(x = family, y = prop, fill = majority.geno)) + geom_bar(stat = "identity", position = "dodge") + geom_text(aes(label = paste0(round(prop*100, 0), "%")), position = position_dodge(width = 0.9), vjust = -0.25) + scale_y_continuous(labels = scales::percent, limits = c(0, 1)) + ylab("Percentage in Family") + xlab("Family") + labs(fill = "Genotype") + theme_classic()
+geno.prop <- ggplot(rhamp.prop, aes(x = family, y = prop, fill = majority.geno)) + geom_bar(stat = "identity", position = "dodge") + geom_text(aes(label = paste0(round(prop*100, 0), "%")), position = position_dodge(width = 0.9), vjust = -0.25) + scale_y_continuous(labels = scales::percent, limits = c(0, 1)) + ylab("Percentage in Family") + xlab("Family") + labs(fill = "Genotype") + theme_classic() +  theme(axis.text = element_text(size = 28), axis.title = element_text(size = 22), legend.key.size = unit(2, 'cm'), legend.title = element_text(size = 22), legend.text = element_text(size = 22)) 
 geno.prop
 
 ######Make bar plot of %Survival and % Mortality for all families including non-mapping + control 
@@ -202,16 +206,3 @@ mort_bar <- ggplot(mort_long, aes(x = Family, y = percent, fill = status)) + geo
 mort_bar
 
 
-
-
-
-#Skeleton Code
-####Remove NA day of death (controls)
-####data_subset <- subset(data.separate, day_of_death!= "NA")
-####remove no-geno calls
-####data_subset2 <- subset(data_subset, geno!="no.geno")
-#gogole rename function for renaming 6_alive
-#geom jitter (points over box or violin plot)
-#remove no.geno
-#put line between 6 and 6_alive to indicate survival, 
-#maybe include survival plot -> would have to summarize based on genotype for each day 
