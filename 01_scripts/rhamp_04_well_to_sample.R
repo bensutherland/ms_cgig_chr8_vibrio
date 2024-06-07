@@ -22,7 +22,9 @@ head(annot.df)
 
 # Adjust sample info
 annot.df <- annot.df[,1:3]
-colnames(annot.df)[1] <- "full.id"
+
+# Build the full ID column
+annot.df$full.id <- paste0(annot.df$plate, "__", annot.df$well)
 head(annot.df)
 
 ### Format full geno data
