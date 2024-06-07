@@ -5,19 +5,17 @@
 # Clear space
 # rm(list=ls())
 
-# Set user variables
-sample_info.FN <- "00_archive/MFrhAmpDNAid_2024-02-12.csv"
-
-
-## Load libraries
-#install.packages("dplyr")
-library("dplyr")
-
 ## Set working directory
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
 current.path <- gsub(pattern = "\\/01_scripts", replacement = "", x = current.path) # take main directory
 setwd(current.path)
-rm(current.path)
+
+# Set user variables
+sample_info.FN <- "00_archive/CHRM8_AAB24_Liam_Surry_2024-06-07.csv"
+
+## Load libraries
+#install.packages("dplyr")
+library("dplyr")
 
 # Identify the files
 filenames.vec <- list.files(path = "02_input_data/", pattern = ".csv", full.names = T)
