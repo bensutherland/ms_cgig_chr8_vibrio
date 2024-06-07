@@ -7,13 +7,15 @@
 head(data_annot.df)
 
 # Evaluate technical reproducibility at the level of the genotype
-data_annot.df <- data_annot.df[order(data_annot.df$DNA.id), ]
+data_annot.df <- data_annot.df[order(data_annot.df$sample), ]
 head(data_annot.df)
 head(data_annot.df, n = 100)
-#View(data_annot.df)
 
-samples <- unique(data_annot.df$DNA.id)
+samples <- unique(data_annot.df$sample)
 length(samples)
+
+# Remove controls
+samples <- samples[which(samples!="Neg")]
 
 # Remove no genos
 dim(data_annot.df)
@@ -47,10 +49,10 @@ for(i in 1:nrow(results.df)){
   sample <- results.df[i,"samples"]
   
   # Reporting
-  #print(paste0("Working on sample ", sample))
+  print(paste0("Working on sample ", sample))
   
   # Take the data for the target sample
-  slice <- data_annot.df[data_annot.df$DNA.id==sample, ]
+  slice <- data_annot.df[data_annot.df$sample==sample, ]
   
   # Define the majority geno
   majority.geno <- names(head(sort(table(slice$geno), decreasing = TRUE), n = 1))
