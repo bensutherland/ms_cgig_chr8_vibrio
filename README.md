@@ -207,35 +207,39 @@ Next, use:
 
 
 ### 05. Amplicon-based association of OsHV-1 trial ###
+#### Initial analysis ####
+- will result in the inds to keep and loci to keep that will be used later
+
+
+
+
+
 Obtain VCF from sequencer, and put in `02_input_data` Input VCF: G0923-21-VIUN.vcf      
+
+Since the VCF contains marker names, but no contig names or coordinates, these will need to be added before the VCF file can be converted to the chromosome-level genome coordinates. To do this, download Additional File S1 from Sutherland et al. 2024, which provides the coordinates of each marker, save it as a .txt file in the present repo, `00_archive`. Then use the following script to update the contig and positional info in the provided VCF:    
+`01_scripts/chr8_oshv1_trial_amp_panel_vcf_approach.R`     
+
+Output: `03_results/G0923-21-VIUN_annot.vcf.gz`     
+
+Then unzip the VCF file to prepare for snplift:    
+`gunzip 03_results/G0923-21-VIUN_annot.vcf.gz`     
+
 
 #### Convert to chromosome assembly coordinates ####
 Use SNPLift to convert the VCF positions from the reference genome used for amplicon panel alignments to the chromosome-level assembly.      
 Clone snplift into the parent folder of the present repo. Change into the SNPLift main directory for the rest of this section.     
-Copy the chromosome and contig-level assemblies into `03_genomes`.         
-Copy the contig-level assembly into `04_input_vcf`.      
+Provide full path to the bwa indexed source genome (v9) and target genome (roslin v1) in the `02_infos/snplift_config.sh`      
+Copy the updated VCF into `04_input_vcf`, and update the info file above with the source VCF and the updated VCF name.     
 
-Ensure that both assemblies are indexed with BWA.    
-
-Update the following lines in `02_infos/snplift_config.sh`:       
-
-```
-export OLD_GENOME="03_genomes/GCA_000297895.1_oyster_v9_genomic.fna"
-export NEW_GENOME="03_genomes/GCF_902806645.1_cgigas_uk_roslin_v1_genomic.fna"
-# Output files
-export INPUT_FILE="04_input_vcf/filtered.recode.vcf"
-export OUTPUT_FILE="contig_to_chr_2023-10-09.vcf"
-# Do final corrections to VCF file
-export CORRECT_ID=0         # Recompute the ID column from columns 1 and 2 [0, 1].
-```
 Note: setting the `CORRECT_ID` to 0 above prevents the ID column from being recalculated, so that your original IDs are carried through to the new VCF.       
 
 Run SNPLift:      
 `time ./snplift 02_infos/snplift_config.sh`      
 
-The output VCF file provides chromosome locations of the SNP variants.     
+Copy the snplift output into this repo:    
+`cp ./G0923-21-VIUN_annot_snplift_to_roslin.vcf ../ms_cgig_chr8/02_input_data/`    
 
-Exit the SNPLift repo. 
+Change directory back into this repo.   
 
 
-
+ 
