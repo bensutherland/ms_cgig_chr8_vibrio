@@ -242,3 +242,14 @@ Change directory back into this repo.
 
 
 #### 05.c. Filter VCF and prepare for gemma analysis #### 
+Use script `01_scripts/chr8_oshv1_amp_02_vcf_to_gemma.R`       
+
+
+#### 05.d. Gemma analysis ####
+Put output of the above script into `03_results`, then change directly into this folder to run the following commands.     
+```
+cd 03_results
+gemma -g gwas_geno.txt -p gwas_pheno.txt -gk -maf 0.05 -o gwas_all_fam
+gemma -g gwas_geno.txt -p gwas_pheno.txt -k output/gwas_all_fam.cXX.txt -n 1 -c gwas_covar.txt  -maf 0.05 -lmm 4 -o gwas_all_fam_covar
+```
+
