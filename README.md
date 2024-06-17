@@ -207,17 +207,16 @@ Next, use:
 
 
 ### 05. Amplicon-based association of OsHV-1 trial ###
-#### Initial analysis ####
-- will result in the inds to keep and loci to keep that will be used later
+Requires the following inputs:      
+- VCF file based on amplicon panel output: `G0923-21-VIUN.vcf` (put in `02_input_data`)       
+- panel contig and SNP position info: `additional_file_S1_amp_panel_design_info.txt` (put in `00_archive`)     
+- survival phenotype data from OsHV-1 trial: `qcat992_sample_mort_pheno_2024-06-17.txt` (put in `00_archive`)     
 
-
-
-
-
+#### 05.a. Prepare VCF for input #### 
 Obtain VCF from sequencer, and put in `02_input_data` Input VCF: G0923-21-VIUN.vcf      
 
 Since the VCF contains marker names, but no contig names or coordinates, these will need to be added before the VCF file can be converted to the chromosome-level genome coordinates. To do this, download Additional File S1 from Sutherland et al. 2024, which provides the coordinates of each marker, save it as a .txt file in the present repo, `00_archive`. Then use the following script to update the contig and positional info in the provided VCF:    
-`01_scripts/chr8_oshv1_trial_amp_panel_vcf_approach.R`     
+`01_scripts/chr8_oshv1_trial_amp_01_prep_vcf.R`     
 
 Output: `03_results/G0923-21-VIUN_annot.vcf.gz`     
 
@@ -225,7 +224,7 @@ Then unzip the VCF file to prepare for snplift:
 `gunzip 03_results/G0923-21-VIUN_annot.vcf.gz`     
 
 
-#### Convert to chromosome assembly coordinates ####
+#### 05.b. Convert to chromosome assembly coordinates ####
 Use SNPLift to convert the VCF positions from the reference genome used for amplicon panel alignments to the chromosome-level assembly.      
 Clone snplift into the parent folder of the present repo. Change into the SNPLift main directory for the rest of this section.     
 Provide full path to the bwa indexed source genome (v9) and target genome (roslin v1) in the `02_infos/snplift_config.sh`      
@@ -242,4 +241,4 @@ Copy the snplift output into this repo:
 Change directory back into this repo.   
 
 
- 
+#### 05.c. Filter VCF and prepare for gemma analysis #### 
