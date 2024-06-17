@@ -20,8 +20,8 @@ proton_to_genepop(neg_control = "BLANK")
 
 # NOTE: may need a multimapper file
 
-load_genepop(datatype = "SNP") # simple_pop_stats/02_input_data/G0923-21-VIUN_File1_gen_data.gen
-obj.file1 <- obj
+# load_genepop(datatype = "SNP") # simple_pop_stats/02_input_data/G0923-21-VIUN_File1_gen_data.gen
+# obj.file1 <- obj
 
 load_genepop(datatype = "SNP") # simple_pop_stats/02_input_data/G0923-21-VIUN_File2_gen_data.gen
 obj.file2 <- obj
@@ -29,18 +29,18 @@ obj.file2 <- obj
 rm(obj)
 
 # Rename
-simplify_names(df = obj.file1, format = "amplitools")
-obj.file1 <- obj_simplified
+# simplify_names(df = obj.file1, format = "amplitools")
+# obj.file1 <- obj_simplified
 
 simplify_names(df = obj.file2, format = "amplitools")
 obj.file2 <- obj_simplified
 
-indNames(obj.file1)
+# indNames(obj.file1)
 indNames(obj.file2) <- gsub(pattern = "_ReAMP", replacement = "", x = indNames(obj.file2))
 
-length(intersect(x = indNames(obj.file1), y = indNames(obj.file2))) # 218
-setdiff(x = indNames(obj.file1), y = indNames(obj.file2)) # no extra in file 1
-setdiff(x = indNames(obj.file2), y = indNames(obj.file1)) # 22 extra in file 2
+# length(intersect(x = indNames(obj.file1), y = indNames(obj.file2))) # 218
+# setdiff(x = indNames(obj.file1), y = indNames(obj.file2)) # no extra in file 1
+# setdiff(x = indNames(obj.file2), y = indNames(obj.file1)) # 22 extra in file 2
 
 # Note: it appears that File 2 is the superior file, so we should just work with that file for now. 
 obj <- obj.file2
@@ -160,12 +160,17 @@ obj
 
 #obj.bck <- obj
 drop_loci(drop_monomorphic = T) ### TODO: need to require an input object identifier
-# Drops 250 monomorphic loci
+# Drops 174 monomorphic loci
 obj <- obj_filt
-
+obj
 
 ##### Analysis ####
 pca_from_genind(data = obj, PCs_ret = 4, plot_eigen = T, plot_allele_loadings = F, retain_pca_obj = T)
 
+# Write out loci to keep
+keep_loci.vec <- locNames(obj)
+write.table(x = keep_loci.vec, file = "03_results/retained_loci.txt", sep = "\t", quote = F, row.names = F, col.names = F)
 
-
+# Write out indiv to keep
+keep_inds.vec <- indNames(obj)
+write.table(x = keep_inds.vec, file = "03_results/retained_inds.txt", sep = "\t", quote = F, row.names = F, col.names = F)
