@@ -25,10 +25,11 @@ rm(current.path)
 # User set variables
 phenos.FN       <- "00_archive/qcat992_sample_mort_pheno_2024-06-17.txt"
 vcf.FN          <- "02_input_data/G0923-21-VIUN_annot_snplift_to_roslin.vcf"
-# inds_to_keep.FN <- "../simple_pop_stats/03_results/retained_inds.txt"
-# loci_to_keep.FN <- "../simple_pop_stats/03_results/retained_loci.txt"
 
 max_missing <- 0.3
+#pheno_of_interest <- "mort_surv"
+pheno_of_interest <- "days_post_challenge"
+impute <- FALSE
 
 #### 01. Load pheno info ####
 pheno.df <- read.delim2(file = phenos.FN, header = T, sep = "\t")
@@ -38,6 +39,10 @@ pheno.df <- separate(data = pheno.df, col = "tube_label", into = c("assay", "fam
 table(pheno.df$family, useNA = "ifany") # see if any NAs
 table(pheno.df$mort_surv, useNA = "ifany") # see if any NAs
 table(paste0(pheno.df$family, "__", pheno.df$mort_surv))
+
+# Update survivor to day 17
+pheno.df[pheno.df$mort_surv=="S", "days_post_challenge"] <- "17"
+head(pheno.df)
 
 
 #### 02. Load VCF file and do filtering, summary analysis ####
@@ -121,7 +126,7 @@ legend(x = 15, y = 30, legend = c("m", "s", "NA")
       )
 dev.off()
 
-# Summarize samples before any filtering is done
+# Summarize samples in the phenotype file before any filtering is done
 table(paste0(pheno.df$family, "__", pheno.df$mort_surv))
 
 
@@ -189,18 +194,15 @@ nLoc(obj.filt) - length(keep)
 # Drop loci from genind
 obj.all.filt <- obj.filt[, loc=keep]
 
-# Rename back to obj
-obj <- obj.all.filt
+# Drop monomorphic loci
+obj <- obj.all.filt # Rename back to obj is required for function
 obj
-
-
-
-#obj.bck <- obj
 drop_loci(drop_monomorphic = T) ### TODO: need to require an input object identifier
 # Drops 174 monomorphic loci
 obj <- obj_filt
 obj
 
+# Create population vector to populate the population of the obj
 population <- rep(NA, times = nInd(obj))
 population[grep(pattern = "114", x = indNames(obj))] <- "F114"
 population[grep(pattern = "115", x = indNames(obj))] <- "F115"
@@ -213,7 +215,7 @@ pop(obj) <- population
 ## Run PCA
 pca_from_genind(data = obj, PCs_ret = 4, plot_eigen = T, plot_allele_loadings = F, retain_pca_obj = T)
 
-# Save info
+# Save info about which individuals and loci were retained after filters
 loci_to_keep <- locNames(obj)
 length(loci_to_keep)
 inds_to_keep <- indNames(obj)
@@ -234,13 +236,14 @@ my_vcf.filt <- my_vcf.filt[which(my_vcf@fix[,"ID"] %in% as.character(loci_to_kee
 my_vcf.filt
 my_vcf <- my_vcf.filt
 
+##### SAVE POINT #####
 
 #### Prepare gemma inputs ####
 ## Extract genotypes
 geno <- extract.gt(x = my_vcf, element = "GT")
 geno[1:5, 1:5]
 
-## Convert marker names to chr and pos info
+## Convert marker names to chromosome and positional info
 marker_names <- rownames(geno) # pull rownames
 marker_names <- as.data.frame(marker_names)
 head(marker_names)
@@ -271,33 +274,39 @@ mode(geno) = "numeric"
 
 geno[1:5,1:5]
 
-#### Imputation ####
-# Create family-specific genotype matrices
-geno_F114 = geno[grep("_114_", rownames(geno)), ]
-dim(geno_F114)
-geno_F115 = geno[grep("_115_", rownames(geno)), ]
-dim(geno_F115)
-geno_F116 = geno[grep("_116_", rownames(geno)), ]
-dim(geno_F116)
-geno_F117 = geno[grep("_117_", rownames(geno)), ]
-dim(geno_F117)
+# If imputing
+if(impute==TRUE){
+  
+  #### Imputation ####
+  # Create family-specific genotype matrices
+  geno_F114 = geno[grep("_114_", rownames(geno)), ]
+  dim(geno_F114)
+  geno_F115 = geno[grep("_115_", rownames(geno)), ]
+  dim(geno_F115)
+  geno_F116 = geno[grep("_116_", rownames(geno)), ]
+  dim(geno_F116)
+  geno_F117 = geno[grep("_117_", rownames(geno)), ]
+  dim(geno_F117)
+  
+  # Run family-specific mean imputation on genotypes
+  geno_F114_impute <- impute_mean(geno_F114)
+  geno_F115_impute <- impute_mean(geno_F115)
+  geno_F116_impute <- impute_mean(geno_F116)
+  geno_F117_impute <- impute_mean(geno_F117)
+  
+  
+  # Reconstruct full genotype matrix
+  geno_imputed <- rbind(  geno_F114_impute
+                          , geno_F115_impute
+                          , geno_F116_impute
+                          , geno_F117_impute
+  )
+  
+  # this is the genotypes file needed for gemma
+  geno <- geno_imputed
+  
+}
 
-# Run family-specific mean imputation on genotypes
-geno_F114_impute <- impute_mean(geno_F114)
-geno_F115_impute <- impute_mean(geno_F115)
-geno_F116_impute <- impute_mean(geno_F116)
-geno_F117_impute <- impute_mean(geno_F117)
-
-
-# Reconstruct full genotype matrix
-geno_imputed <- rbind(  geno_F114_impute
-                      , geno_F115_impute
-                      , geno_F116_impute
-                      , geno_F117_impute
-                      )
-
-# this is the genotypes file needed for gemma
-geno <- geno_imputed
 
 ## Obtain vector of family identities
 head(rownames(geno))
@@ -312,10 +321,11 @@ table(var_family)
 gwascovar = model.matrix(~as.factor(var_family))
 
 
-# Create phenotype holding mort/survival info
+# Create vector with phenotypic information
 indiv.df <- rownames(geno)
 indiv.df <- as.data.frame(indiv.df)
 dim(indiv.df)
+head(indiv.df)
 
 # Do all genotyped individuals have a phenotype? 
 setdiff(x = indiv.df$indiv.df, y = pheno.df$tube_label) # if any are present, need to remove at the start of this script and start over
@@ -325,15 +335,27 @@ indiv.df <- merge(x = indiv.df, y = pheno.df, by.x = "indiv.df", by.y = "tube_la
 # NOTE: if any NAs, this will not work
 
 head(indiv.df) # in the same order as the geno df
+geno[1:5,1:5]
 tail(indiv.df)
 dim(indiv.df)
 table(indiv.df$mort_surv, useNA = "ifany") # should all have phenos
 table(paste0(indiv.df$family, "__", indiv.df$mort_surv))
 
-indiv.df$mort_surv <- gsub(pattern = "S", replacement = "1", x = indiv.df$mort_surv)
-indiv.df$mort_surv <- gsub(pattern = "M", replacement = "0", x = indiv.df$mort_surv)
-var_status <- as.numeric(indiv.df$mort_surv)
-var_status
+plot(x = pheno.df$family, y = pheno.df$days_post_challenge)
+
+
+if(pheno_of_interest=="mort_surv"){
+  
+  indiv.df$mort_surv <- gsub(pattern = "S", replacement = "1", x = indiv.df$mort_surv)
+  indiv.df$mort_surv <- gsub(pattern = "M", replacement = "0", x = indiv.df$mort_surv)
+  var_status <- as.numeric(indiv.df$mort_surv)
+  var_status
+  
+}else if(pheno_of_interest=="days_post_challenge"){
+  
+  var_status <- as.numeric(indiv.df$days_post_challenge)
+  
+}
 
 # GWAS variables
 gwaspheno <-  var_status
@@ -342,17 +364,18 @@ gwasgeno = t(geno)
 gwasgeno[1:5,1:5] # preview
 gwasgeno <- cbind(rownames(gwasgeno),"X","Y",gwasgeno)
 
-gwasanno <- rownames(gwasgeno)
-gwasanno <- as.data.frame(gwasanno)
-gwasanno <- separate(data = gwasanno, col = "gwasanno", into = c("chr", "pos"), sep = "__", remove = F)
-head(gwasanno)
+### Not working currently... 
+# gwasanno <- rownames(gwasgeno)
+# gwasanno <- as.data.frame(gwasanno)
+# gwasanno <- separate(data = gwasanno, col = "gwasanno", into = c("chr", "pos"), sep = "__", remove = F)
+# head(gwasanno)
 
 
-write.table(x = gwaspheno, file = "03_results/gwaspheno.txt", row.names = F, col.names = F)
-write.table(x = gwascovar, file = "03_results/gwascovar.txt", row.names = F, col.names = F)
-write.table(x = gwasgeno, file = "03_results/gwasgeno.txt", row.names = F, col.names = F, quote = F)
-write.table(x = gwasanno, file = "03_results/gwasanno.txt", row.names = F, col.names = F, quote = F)
+write.table(x = gwaspheno, file = "03_results/gwas_pheno.txt", row.names = F, col.names = F)
+write.table(x = gwascovar, file = "03_results/gwas_covar.txt", row.names = F, col.names = F)
+write.table(x = gwasgeno, file = "03_results/gwas_geno.txt", row.names = F, col.names = F, quote = F)
+#write.table(x = gwasanno, file = "03_results/gwas_anno.txt", row.names = F, col.names = F, quote = F)
 
 
 
-
+# Next: go to GEMMA for analysis (see README)
