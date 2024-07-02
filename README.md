@@ -208,9 +208,15 @@ Next, use:
 
 ### 05. Amplicon-based association of OsHV-1 trial ###
 Requires the following inputs:      
-- VCF file based on amplicon panel output: `G0923-21-VIUN.vcf` (put in `02_input_data`)       
+- ped and map files based on amplicon panel output: e.g., `G0923-21-VIUN.ped` (put in `02_input_data`)       
 - panel contig and SNP position info: `additional_file_S1_amp_panel_design_info.txt` (put in `00_archive`)     
 - survival phenotype data from OsHV-1 trial: `qcat992_sample_mort_pheno_2024-06-17.txt` (put in `00_archive`)     
+
+note: the .ped and .map files are used instead of the supplied VCF file, because the supplied VCF file from the thermo output does not seem to be read properly by BCFtools.     
+
+Change directory into `02_input_data` and run the following:    
+`plink2 --ped ./G0923-21-VIUN.ped --map ./G0923-21-VIUN.map --recode vcf --out G0923-21-VIUN_converted`      
+
 
 #### 05.a. Prepare VCF for input #### 
 Obtain VCF from sequencer, and put in `02_input_data` Input VCF: G0923-21-VIUN.vcf      
@@ -218,7 +224,7 @@ Obtain VCF from sequencer, and put in `02_input_data` Input VCF: G0923-21-VIUN.v
 Since the VCF contains marker names, but no contig names or coordinates, these will need to be added before the VCF file can be converted to the chromosome-level genome coordinates. To do this, download Additional File S1 from Sutherland et al. 2024, which provides the coordinates of each marker, save it as a .txt file in the present repo, `00_archive`. Then use the following script to update the contig and positional info in the provided VCF:    
 `01_scripts/chr8_oshv1_trial_amp_01_prep_vcf.R`     
 
-Output: `03_results/G0923-21-VIUN_annot.vcf.gz`     
+Output: `03_results/G0923-21-VIUN_converted_annot.vcf.gz`     
 
 Then unzip the VCF file to prepare for snplift:    
 `gunzip 03_results/G0923-21-VIUN_annot.vcf.gz`     
@@ -227,7 +233,7 @@ Then unzip the VCF file to prepare for snplift:
 #### 05.b. Convert to chromosome assembly coordinates ####
 Use SNPLift to convert the VCF positions from the reference genome used for amplicon panel alignments to the chromosome-level assembly.      
 Clone snplift into the parent folder of the present repo. Change into the SNPLift main directory for the rest of this section.     
-Provide full path to the bwa indexed source genome (v9) and target genome (roslin v1) in the `02_infos/snplift_config.sh`      
+Provide full path to the bwa indexed source genome (v9) and target genome (roslin v1) in the `02_infos/snplift_config.sh`. Also set `CORRECT_ALLELES=1` to convert the ref allele when alignments are reverse complemented.       
 Copy the updated VCF into `04_input_vcf`, and update the info file above with the source VCF and the updated VCF name.     
 
 Note: setting the `CORRECT_ID` to 0 above prevents the ID column from being recalculated, so that your original IDs are carried through to the new VCF.       

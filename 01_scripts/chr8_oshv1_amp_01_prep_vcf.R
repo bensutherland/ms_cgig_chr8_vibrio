@@ -18,7 +18,7 @@ rm(current.path)
 
 # User set variables
 chr_info.FN <- "00_archive/additional_file_S1_amp_panel_design_info.txt"
-vcf.FN <- "02_input_data/G0923-21-VIUN.vcf"
+vcf.FN <- "02_input_data/G0923-21-VIUN_converted.vcf"
 
 # Load chr info and prepare marker ID, contig name, and position of SNP
 chr_info.df <- read.delim(file = chr_info.FN)
