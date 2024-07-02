@@ -4,6 +4,7 @@ Code repository to accompany all CHR8 analyses, which currently includes the fol
 - [2. ddRADseq of Vibrio challenge survivors (CHR8 families)](#02-ocv23-analysis)      
 - [3. rhAmp assay for CHR8 genotypes in Vibrio challenge survivors (CHR8 families)](#03-OCV23-rhAmp-analysis)     
 - [4. OA exposure of families from crosses at VIU (VIU families)](#04-OA-exposed-families)      
+- [5. Amplicon panel work for OsHV-1 trial](#05-Amplicon-based-association-of-OsHV-1-trial)       
 
 
 #### Requirements ####
@@ -260,3 +261,25 @@ gemma -g gwas_geno.txt -p gwas_pheno.txt -k output/gwas_all_fam.cXX.txt -n 1 -c 
 ```
 
 Then go to `chr8_oshv1_amp_03_gemma_results.R`.    
+
+
+#### 05.e. Compare wgrs to amp panel output ####
+Use the above instructions to create a corrected amp panel, snplifted VCF file, then run:      
+```
+# Compress the VCF then index with tabix (will get error if try to read the VCF file directly)      
+bgzip G0923-21-VIUN_annot_snplift_to_roslin_corr.vcf && tabix -p vcf G0923-21-VIUN_annot_snplift_to_roslin_corr.vcf.gz      
+
+# Convert to BCF file
+bcftools view G0923-21-VIUN_annot_snplift_to_roslin_corr.vcf.gz -o G0923-21-VIUN_annot_snplift_to_roslin_corr.bcf
+
+# Index
+bcftools index G0923-21-VIUN_annot_snplift_to_roslin_corr.bcf
+bcftools index mpileup_calls.bcf    
+
+# Run isec to compare between the files (note, see folder structure)
+bcftools isec ./00_source_materials/amp_panel_genotypes/G0923-21-VIUN_annot_snplift_to_roslin_corr.bcf ./00_source_materials/parent_wgrs_genotypes/mpileup_calls.bcf -p compare_amp_panel_and_wgrs_parents_all_loci/
+
+
+```
+
+
