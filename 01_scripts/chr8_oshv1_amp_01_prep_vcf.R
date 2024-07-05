@@ -18,7 +18,7 @@ rm(current.path)
 
 # User set variables
 chr_info.FN <- "00_archive/additional_file_S1_amp_panel_design_info.txt"
-vcf.FN <- "02_input_data/G0923-21-VIUN_converted.vcf"
+vcf.FN <- "02_input_data/G0923-21-VIUN_converted.vcf.gz"
 
 # Load chr info and prepare marker ID, contig name, and position of SNP
 chr_info.df <- read.delim(file = chr_info.FN)
@@ -30,6 +30,20 @@ head(chr_info.df)
 
 # Load input VCF
 my_vcf <- read.vcfR(file = vcf.FN)
+
+# # Inspect
+# test.df <- my_vcf@fix
+# test.df <- as.data.frame(test.df)
+# sort(table(test.df$ID, useNA = "ifany"), decreasing = T)
+# head(test.df)
+# rm(test.df)
+# 
+# # Remove any locus that does not have a marker name
+# my_vcf <- my_vcf[!is.na(my_vcf@fix[,"ID"]), ]
+# my_vcf@gt[1:10,1:10]
+# geno.df <- my_vcf@gt
+# View(geno.df)
+
 
 #### 02. Replace missing info with chr info ####
 # Pull out the fix section of the VCF (to replace the 0 and 0 for CHROM and POS)
@@ -58,7 +72,7 @@ my_vcf@fix <- replacement_fix.mat
 my_vcf@fix[1:5,]
 
 # Write out compressed VCF file
-output.FN <- paste0("03_results/", gsub(pattern = "\\.vcf", x =  basename(vcf.FN), replacement = "_annot.vcf.gz"))
+output.FN <- paste0("03_results/", gsub(pattern = "\\.vcf\\.gz", x =  basename(vcf.FN), replacement = "_annot.vcf.gz"))
 print(paste0("Your output will be a compressed VCF with the name ", output.FN))
 vcfR::write.vcf(x = my_vcf, file = output.FN)
 
