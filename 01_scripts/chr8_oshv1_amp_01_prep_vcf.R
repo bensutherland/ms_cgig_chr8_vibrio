@@ -18,7 +18,7 @@ rm(current.path)
 
 # User set variables
 chr_info.FN <- "00_archive/additional_file_S1_amp_panel_design_info.txt"
-vcf.FN <- "02_input_data/G0923-21-VIUN_converted.vcf.gz"
+vcf.FN <- "02_input_data/G0923-21-VIUN_corr_alleles.vcf"
 
 # Load chr info and prepare marker ID, contig name, and position of SNP
 chr_info.df <- read.delim(file = chr_info.FN)
@@ -72,7 +72,7 @@ my_vcf@fix <- replacement_fix.mat
 my_vcf@fix[1:5,]
 
 # Write out compressed VCF file
-output.FN <- paste0("03_results/", gsub(pattern = "\\.vcf\\.gz", x =  basename(vcf.FN), replacement = "_annot.vcf.gz"))
+output.FN <- paste0("02_input_data/", gsub(pattern = "\\.vcf", x =  basename(vcf.FN), replacement = "_annot.vcf.gz"))
 print(paste0("Your output will be a compressed VCF with the name ", output.FN))
 vcfR::write.vcf(x = my_vcf, file = output.FN)
 

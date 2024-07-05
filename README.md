@@ -13,6 +13,7 @@ Code repository to accompany all CHR8 analyses, which currently includes the fol
 [stacks_workflow](https://github.com/enormandeau/stacks_workflow)       
 [wgrs_workflow](https://github.com/bensutherland/wgrs_workflow)        
 [GEMMA](https://github.com/genetics-statistics/GEMMA/tree/master)         
+[amplitargets](https://github.com/bensutherland/amplitargets)         
 
 ### 01. WGRS of OsHV-1 exposure ###
 Follow `wgrs_workflow`.       
@@ -219,101 +220,119 @@ note: the .ped and .map files are used instead of the supplied VCF files for off
 
 
 #### 05.a. Prepare input data #### 
-Change directory into `02_input_data` and run the following:    
-`plink2 --ped ./G0923-21-VIUN.ped --map ./G0923-21-VIUN.map --recode vcf --out G0923-21-VIUN_converted`      
+##### Offspring data #####
+An issue arose where the .ped and .map files do not indicate the correct reference allele. To solve this, put the two files into `02_input_data`, clone amplitargets at the same level as this repo, and use the following script to prepare a ref allele file to inform the plink conversion:      
+`01_scripts/correct_orientation_of_plink_map.R`     
+...this will produce `02_input_data/G0923-21-VIUN_set_allele.txt`    
 
-Unzip the compressed VCF files:     
-`gunzip *.gz`     
+Change directory into `02_input_data` and run the following to correct the allele to the REF/ALT from the hotspot file:    
+`plink2 --ped 02_input_data/G0923-21-VIUN.ped --map 02_input_data/G0923-21-VIUN.map --ref-allele 02_input_data/G0923-21-VIUN_set_allele.txt --recode vcf --out 02_input_data/G0923-21-VIUN_corr_alleles`     
 
-Compress using bgzip:    
-`ls *.vcf | xargs -n 1 bgzip`          
-
-Index all using bcftools
-`ls *.vcf.gz | xargs -n 1 bcftools index`   
-
-
-##### Combine parent VCFs #####
-Combine the offspring VCF file and the parent VCF files:       
-```
-# Create filelist for the parent files
-ls -1 TSVC_variants_IonCode_0*.vcf.gz > parent_VCF_filelist.txt
-
-# merge VCF files
-bcftools merge --file-list ./parent_VCF_filelist.txt -Oz -o ../03_results/amp_panel_all_parents_orgn.vcf.gz
-
-# Change directory back to main
-cd ..
-
-```
-note: these have novel variants also, which will need to be removed. These have the correct coordinates (so they don't need to be added)
-
-
-##### Add CHROM and POS info to the offspring #####
-
-Since the VCF contains marker names, but no contig names or coordinates, these will need to be added before the VCF file can be converted to the chromosome-level genome coordinates. To do this, download Additional File S1 from Sutherland et al. 2024, which provides the coordinates of each marker, save it as a .txt file in the present repo, `00_archive`. Then use the following script to update the contig and positional info in the provided VCF:    
+It is also necessary to add the chromosome and positional information to the VCF file:     
+To do this, download Additional File S1 from Sutherland et al. 2024, which provides the coordinates of each marker, save it as a .txt file in the present repo, `00_archive`. Then use the following script to update the contig and positional info in the provided VCF:    
 `01_scripts/chr8_oshv1_trial_amp_01_prep_vcf.R`     
 
-Output: `03_results/G0923-21-VIUN_converted_annot.vcf.gz`     
+Output: `02_input_data/G0923-21-VIUN_corr_alleles_annot.vcf.gz`    
+Decompress: `gunzip 02_input_data/G0923-21-VIUN_corr_alleles_annot.vcf.gz`
 
-Then unzip the VCF file to prepare for snplift:    
-`gunzip 03_results/G0923-21-VIUN_annot.vcf.gz`     
 
+##### Parent data #####
+Put the parent data in `02_input_data`. This data came with the correct ref allele and positional info.         
+Use the following to merge parent data into a single file:    
+```
+# Decompress the compressed VCF files:    
+gunzip 02_input_data/*.gz
+
+# Compress the parent files using bgzip
+ls 02_input_data/TSVC_variants_IonCode_0*.vcf | xargs -n 1 bgzip
+
+# Index the parent files using bcftools
+ls 02_input_data/TSVC_variants_IonCode_0*.vcf.gz | xargs -n 1 bcftools index
+
+# Create filelist for merging the parent files
+ls -1 02_input_data/TSVC_variants_IonCode_0*.vcf.gz > 02_input_data/parent_VCF_filelist.txt
+
+# merge VCF files
+bcftools merge --file-list ./02_input_data/parent_VCF_filelist.txt -Ov -o ./02_input_data/amp_panel_all_parents.vcf
+
+# note: these have novel variants also, which will need to be removed eventually (below)    
+
+```
 
 #### 05.b. Convert to chromosome assembly coordinates ####
-Do this for both the offspring AND the parent file separately.    
+Clone a snplift repo for each of offspring and parent data.    
+```
+cd ..
+git clone https://github.com/enormandeau/snplift.git snplift_offspring    
+git clone https://github.com/enormandeau/snplift.git snplift_parents
 
-Use SNPLift to convert the VCF positions from the reference genome used for amplicon panel alignments to the chromosome-level assembly.      
-Clone snplift into the parent folder of the present repo. Change into the SNPLift main directory for the rest of this section.     
-Provide full path to the bwa indexed source genome (v9) and target genome (roslin v1) in the `02_infos/snplift_config.sh`. Also set `CORRECT_ALLELES=1` to convert the ref allele when alignments are reverse complemented.       
-Copy the updated VCF into `04_input_vcf`, and update the info file above with the source VCF and the updated VCF name.     
+cp ./ms_cgig_chr8/02_input_data/amp_panel_all_parents.vcf ./snplift_parents/04_input_vcf/     
+cp ./ms_cgig_chr8/02_input_data/G0923-21-VIUN_corr_alleles_annot.vcf ./snplift_offspring/04_input_vcf/
 
+```
+
+Within each snplift repository, edit the `02_infos/snplift_config.sh` file with the following edits:    
+- full path to the original genome (bwa indexed)
+- full path to the target genome (bwa indexed)
+- CORRECT_ALLELES=1 to convert the ref all allele when alignments are reverse complemented
+- original VCF filename
+- target (new) VCF filename
 Note: setting the `CORRECT_ID` to 0 above prevents the ID column from being recalculated, so that your original IDs are carried through to the new VCF.       
 
-Run SNPLift:      
-`time ./snplift 02_infos/snplift_config.sh`      
-
-Copy the snplift output into this repo:    
-`cp ./G0923-21-VIUN_annot_snplift_to_roslin.vcf ../ms_cgig_chr8/02_input_data/`    
-
-Do this for both. 
-
-Change directory back into this repo, and copy both SNPlift'ed VCF files into `03_results`.    
+Run snplift for each:    
 ```
-cp ../snplift_parents/amp_panel_all_parents_roslin.vcf 03_results/
+cd snplift_offspring
+time ./snplift 02_infos/snplift_config.sh      
+cp ./G0923-21-VIUN_corr_alleles_annot_roslin.vcf ../ms_cgig_chr8/03_results/
 
-cp ../snplift_offspring/G0923-21-VIUN_roslin.vcf 03_results/
+cd ..
+
+cd snplift_parents
+time ./snplift 02_infos/snplift_config.sh      
+cp ./amp_panel_all_parents_roslin.vcf ../ms_cgig_chr8/03_results/
+
 ```
 
-##### Combine offspring and parent data #####
+
+#### 05.c. Combine offspring and parent data #####
 ```
 # Change directory 
 cd 03_results
 
 # Fix header after snplift for both files
-bcftools reheader G0923-21-VIUN_roslin.vcf --fai ~/genomes/GCF_902806645.1_cgigas_uk_roslin_v1_genomic.fna.fai --output G0923-21-VIUN_roslin_rehead.vcf
+bcftools reheader G0923-21-VIUN_corr_alleles_annot_roslin.vcf --fai ~/genomes/GCF_902806645.1_cgigas_uk_roslin_v1_genomic.fna.fai --output G0923-21-VIUN_corr_alleles_annot_roslin_rehead.vcf
 
 bcftools reheader amp_panel_all_parents_roslin.vcf --fai ~/genomes/GCF_902806645.1_cgigas_uk_roslin_v1_genomic.fna.fai --output amp_panel_all_parents_roslin_rehead.vcf
-
-# Put the original into drafts to avoid confusion
-mkdir z-drafts
-mv *_roslin.vcf z-drafts/
 
 # Compress the snplift'ed, rehead'ed VCF files with bgzip to prepare for bcftools conversion
 ls *_roslin_rehead.vcf | xargs -n 1 bgzip
 
 # Convert each to .bcf file
-bcftools view G0923-21-VIUN_roslin_rehead.vcf.gz -Ob -o G0923-21-VIUN_roslin_rehead.bcf
+bcftools view G0923-21-VIUN_corr_alleles_annot_roslin_rehead.vcf.gz -Ob -o G0923-21-VIUN_corr_alleles_annot_roslin_rehead.bcf
 bcftools view amp_panel_all_parents_roslin_rehead.vcf.gz -Ob -o amp_panel_all_parents_roslin_rehead.bcf
 
 # Index each .bcf file
 bcftools index amp_panel_all_parents_roslin_rehead.bcf
-bcftools index G0923-21-VIUN_roslin_rehead.bcf 
+bcftools index G0923-21-VIUN_corr_alleles_annot_roslin_rehead.bcf
 
 # Run isec to compare between the files (note, see folder structure)
 mkdir isec_output
 bcftools isec ./G0923-21-VIUN_roslin_rehead.bcf ./amp_panel_all_parents_roslin_rehead.bcf -p isec_output/
 
 ```
+
+Logically, it only makes sense to merge the parent and offspring data that are common between the two, which would mean files 0002.vcf (offspring) and 0003.vcf (parents) common to both.    
+```
+# Compress the VCF files
+ls *.vcf | xargs -n 1 bgzip
+
+# Index the VCF files
+ls *.vcf.gz | xargs -n 1 bcftools index
+
+```
+
+
+
 
 #### 05.c. Filter VCF and prepare for gemma analysis #### 
 Use script `01_scripts/chr8_oshv1_amp_02_vcf_to_gemma.R`       
