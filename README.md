@@ -330,6 +330,76 @@ ls *.vcf | xargs -n 1 bgzip
 ls *.vcf.gz | xargs -n 1 bcftools index
 
 ```
+(#TODO: add details about comparing genotypes between the technologies)      
+ 
+
+##### Next phase #####
+Now that the genotypes by panel have been confirmed to be finding the same results as the wgrs data, the next step will be as follows:      
+a) exclude loci that are present in the panel datafile:       
+```
+cd ..
+mkdir compare_amp_panel_and_wgrs_parents_filtered_loci
+cd 00_source_materials/parent_wgrs_genotypes/
+bcftools index mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf
+cd ../..
+
+# compare the panel loci against the filtered wgrs loci
+bcftools isec ./00_source_materials/parent_wgrs_genotypes/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./ms_cgig_chr8/03_results/amp_panel_all_parents_roslin_rehead.bcf -p compare_amp_panel_and_wgrs_parents_filtered_loci/ 
+
+# 0000.vcf = private to wgrs
+# 0001.vcf = private to panel
+# 0002.vcf = records from panel shared in both
+# 0003.vcf = records from wgrs shared in both
+
+# Therefore the desired file is 0000.vcf
+cd ms_cgig_chr8
+cp -l ../compare_amp_panel_and_wgrs_parents_filtered_loci/0000.vcf ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf
+
+cd 03_results
+
+bcftools query -l mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf > wgrs_samples_original_names.txt
+
+# manually annotate the file to separate the old_name and new_name with whitespace, single line per sample
+
+bcftools reheader --samples wgrs_samples_original_names.txt -o ./mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead.vcf ./mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf
+
+# Get the sample names and sort them
+bcftools query -l mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead.vcf | sort > ./sorted_wgrs_samples.txt
+
+# Then sort in the VCF file itself
+bcftools view -S sorted_wgrs_samples.txt ./mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead.vcf -o mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead_sorted_samples.vcf
+
+# Compress with bgzip
+bgzip mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead_sorted_samples.vcf
+
+# Index
+bcftools index mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead_sorted_samples.vcf.gz
+
+# Do the same to the amp panel parent file
+bcftools query -l amp_panel_all_parents_roslin_rehead.bcf > amp_panel_parents_original_names.txt
+# manually edit
+
+# Rename
+bcftools reheader --samples amp_panel_parents_original_names.txt amp_panel_all_parents_roslin_rehead.bcf -o amp_panel_all_parents_roslin_rehead_rename.bcf
+
+# Get the sample names and sort them
+bcftools query -l amp_panel_all_parents_roslin_rehead_rename.bcf | sort > sorted_amp_parents_samples.txt
+
+# Sort the actual BCF file
+bcftools view -S sorted_amp_parents_samples.txt ./amp_panel_all_parents_roslin_rehead_rename.bcf -o amp_panel_all_parents_roslin_rehead_rename_sorted_samples.bcf
+
+# Index
+bcftools index amp_panel_all_parents_roslin_rehead_rename_sorted_samples.bcf
+
+# Finally, combine the two
+bcftools concat mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead_sorted_samples.vcf.gz amp_panel_all_parents_roslin_rehead_rename_sorted_samples.bcf -Ob -o wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf
+
+
+
+```
+
+
+
 
 
 
