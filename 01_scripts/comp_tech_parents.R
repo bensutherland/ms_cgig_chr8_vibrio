@@ -158,6 +158,11 @@ for(i in 1:length(eval.df$mname)){
 
 head(eval.df)
 
+# Summary stats
+summary(eval.df$percent.corr)
+summary(eval.df$tally)
+nrow(eval.df)
+
 # Add a percentage correct (i.e., how many of the present pairs were found to be concordant?)
 eval.df$percent.corr <- eval.df$tally / eval.df$pair.tally
 head(eval.df)
