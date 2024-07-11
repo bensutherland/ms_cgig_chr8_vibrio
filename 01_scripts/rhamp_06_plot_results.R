@@ -1,12 +1,21 @@
-#Setting Up
-setwd("C:/Users/ereth/Desktop/BIOL_491/rhAmpprocessing/03_results/")
-getwd()
-install.packages("ggplot2")
-install.packages("tidyr")
-install.packages("dplyr")
-install.packages("gridExtra")
-install.packages("gridGraphics")
-install.packages("cowplot")
+# Plot genotype and mortality results
+# Liam Surry, Ben Sutherland
+# Initialized 2024-02-07
+
+#### 00. Front matter ####
+# Set working directory
+current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
+current.path <- gsub(pattern = "01_scripts", replacement = "", x = current.path)
+setwd(current.path)
+rm(current.path)
+
+# Install and load packages
+#install.packages("ggplot2")
+#install.packages("tidyr")
+#install.packages("dplyr")
+#install.packages("gridExtra")
+#install.packages("gridGraphics")
+#install.packages("cowplot")
 
 library(ggplot2)
 library(tidyr)
@@ -15,55 +24,161 @@ library(gridGraphics)
 library(gridExtra)
 library(cowplot)
 
-#import data
-rhamp.df <- read.csv(file = "sample_day_of_death_and_DNA_ID.csv")
-rhamp_to_geno_summary <- read.csv(file = "rhAmp_per_sample_genotype_summary.csv")
-#merge data frames
-rhamp_merged <- merge(rhamp.df, rhamp_to_geno_summary, by = "samples")
-
-#Split sample column into family and day of death
-rhamp_merged <- separate(rhamp_merged, col = family.ID, into = c("Sample_family", "day_of_death"), sep = "_D")
-head(rhamp_merged)
+# Set user variables
+sample_id_interp.FN <- "00_archive/sample_day_of_death_and_DNA_ID.csv"
+rhamp_to_geno_summary.FN <- "03_results/rhAmp_per_sample_genotype_summary.csv"
 
 
-#table(data.separate$day_of_death)
-#table(paste0(data.separate$Sample_family, "_", data.separate$day_of_death))
+#### 01. Load and prep data ####
+sample_id_interp.df <- read.csv(file = sample_id_interp.FN)
+sample_id_interp.df <- as.data.frame(sample_id_interp.df)
+head(sample_id_interp.df)
+dim(sample_id_interp.df)
+
+rhamp_to_geno_summary.df <- read.csv(file = rhamp_to_geno_summary.FN)
+rhamp_to_geno_summary.df <- as.data.frame(rhamp_to_geno_summary.df)
+head(rhamp_to_geno_summary.df)
+dim(rhamp_to_geno_summary.df)
+
+# Merge input files
+rhamp_merged.df <- merge(x = sample_id_interp.df, y = rhamp_to_geno_summary.df, by = "samples")
+dim(rhamp_merged.df)
+head(rhamp_merged.df)
+
+# Split sample info column (family.ID) into component parts (note: assumes _D separates)
+rhamp_merged.df <- separate(data = rhamp_merged.df, col = "family.ID"
+                             , into = c("sample_family", "day_of_death")
+                             , sep = "_D"
+                           )
+head(rhamp_merged.df)
+unique(rhamp_merged.df$day_of_death)
+# Update alive to a arbitrary later-date of 7
+rhamp_merged.df$day_of_death <- gsub(pattern = "6_ALIVE", replacement = "7", x = rhamp_merged.df$day_of_death)
+table(rhamp_merged.df$day_of_death)
+
+# Assign day_of_death values to numerical 
+rhamp_merged.df$day_of_death <- as.numeric(rhamp_merged.df$day_of_death)
+
+# table(paste0(rhamp_merged.df$sample_family, "_", rhamp_merged.df$day_of_death))
+
+# Ensure all samples have genotypes
+unique(rhamp_merged.df$majority.geno)
 
 
-#Remove no genos
-#rhamp_separate_day[2,8]
-rhamp_no_geno <- rhamp_merged[!is.na(rhamp_merged$day_of_death) & rhamp_merged$majority.geno!="no.geno",]
-dim(rhamp_merged)
+#### 02. Plot day of death by genotype per-family ####
+# Change genotypes to number of alternate alleles
+rhamp_merged.df$num_alt <- rhamp_merged.df$majority.geno
+rhamp_merged.df$num_alt <- gsub(pattern = "homo.ref", replacement = "0", x = rhamp_merged.df$num_alt)
+rhamp_merged.df$num_alt <- gsub(pattern = "het", replacement = "1", x = rhamp_merged.df$num_alt)
+rhamp_merged.df$num_alt <- gsub(pattern = "homo.alt", replacement = "2", x = rhamp_merged.df$num_alt)
+head(rhamp_merged.df)
+str(rhamp_merged.df)
+rhamp_merged.df$num_alt <- as.numeric(rhamp_merged.df$num_alt)
 
-#Reassign day_of_death call "6_ALIVE as arbitrary day of death 7 
-rhamp_no_geno$day_of_death[rhamp_no_geno$day_of_death == "6_ALIVE"] <- 7
-head(rhamp_no_geno)
+# Subset families
+head(rhamp_merged.df)
 
-#Assign day_of_death values to numerical 
-rhamp_no_geno$day_of_death <- as.numeric(as.character(rhamp_no_geno$day_of_death))
+# Separate data frame into families 
+rhamp_merged.df  <- separate(rhamp_merged.df, col = sample_family, into = c("project", "family"), sep = "_F", remove = F)
+rhamp_family_114 <- subset(rhamp_merged.df, family == "114")
+rhamp_family_115 <- subset(rhamp_merged.df, family == "115")
+rhamp_family_116 <- subset(rhamp_merged.df, family == "116")
+rhamp_family_117 <- subset(rhamp_merged.df, family == "117")
 
-#Plotting: basic boxplot
-boxplot(rhamp_no_geno$day_of_death ~ rhamp_no_geno$majority.geno, xlab = "Genotype", ylab = "Day_of_Death")
+
+# Plot with ggplot2
+F114.plot <-  ggplot(rhamp_family_114, aes(x = as.factor(num_alt), y= day_of_death)) + 
+                  geom_boxplot(fill="gray") +
+                  geom_jitter() + 
+                  labs(x= "Number alternate alleles", y = "Days to death") +
+                  theme(axis.text = element_text(size = 12), 
+                        axis.title = element_text(size = 14)) + 
+                  theme_classic()
+                
+F115.plot  <-   ggplot(rhamp_family_115, aes(x = as.factor(num_alt), y= day_of_death)) + 
+                  geom_boxplot(fill="gray") +
+                  geom_jitter() + 
+                  labs(x= "Number alternate alleles", y = "Days to death") +
+                  theme(axis.text = element_text(size = 12), 
+                        axis.title = element_text(size = 14))+ 
+  theme_classic()
+                
+F116.plot  <- ggplot(rhamp_family_116, aes(x = as.factor(num_alt), y= day_of_death)) + 
+                  geom_boxplot(fill="gray") +
+                  geom_jitter() + 
+                  labs(x= "Number alternate alleles", y = "Days to death") +
+                  theme(axis.text = element_text(size = 12), 
+                        axis.title = element_text(size = 14))+ 
+  theme_classic()
+                
+F117.plot   <-  ggplot(rhamp_family_117, aes(x = as.factor(num_alt), y= day_of_death)) + 
+                  geom_boxplot(fill="gray") +
+                  geom_jitter() + 
+                  labs(x= "Number alternate alleles", y = "Days to death") +
+                  theme(axis.text = element_text(size = 12), 
+                        axis.title = element_text(size = 14))+ 
+  theme_classic()
+                
+final_fig <- ggarrange(F114.plot, F115.plot, F116.plot, F117.plot
+                , labels = c("A", "B", "C", "D")
+                , ncol = 2, nrow = 2)
+
+pdf(file = "03_results/boxplot_days_to_death_by_num_alt_alleles.pdf", width = 8, height = 5.5)
+print(final_fig)
+dev.off()
+
+# Base R boxplot and linear model stats
+par(mfrow=c(1,1))
+boxplot(rhamp_merged.df$day_of_death[grep(pattern = "F114", x = rhamp_merged.df$sample_family)] 
+        ~ rhamp_merged.df$num_alt[grep(pattern = "F114", x = rhamp_merged.df$sample_family)]
+        , ylab = "day to death", xlab = "Number alt. allele"
+        , las = 1
+        )
+
+mod <- lm(formula = rhamp_merged.df$day_of_death[grep(pattern = "F114", x = rhamp_merged.df$sample_family)] 
+                  ~ rhamp_merged.df$num_alt[grep(pattern = "F114", x = rhamp_merged.df$sample_family)])
+summary(mod)
 
 
-#Plotting without survivors 
-rhamp_no_survivors<- rhamp_no_geno[!is.na(rhamp_no_geno$day_of_death) & rhamp_no_geno$day_of_death !="7",]
-boxplot(rhamp_no_survivors$day_of_death ~ rhamp_no_survivors$majority.geno, xlab = "Genotype", ylab = "Day_of_Death(no survivors)")
+boxplot(rhamp_merged.df$day_of_death[grep(pattern = "F115", x = rhamp_merged.df$sample_family)] 
+        ~ rhamp_merged.df$num_alt[grep(pattern = "F115", x = rhamp_merged.df$sample_family)]
+        , ylab = "day to death", xlab = "Number alt. allele"
+        , las = 1
+        
+)
+mod <- lm(formula = rhamp_merged.df$day_of_death[grep(pattern = "F115", x = rhamp_merged.df$sample_family)] 
+          ~ rhamp_merged.df$num_alt[grep(pattern = "F115", x = rhamp_merged.df$sample_family)])
+summary(mod)
 
-#Violin plot representation 
-rhamp.violin.no.jitter<- ggplot(data= rhamp_no_geno)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors"))
-rhamp.violin.no.jitter
-#Now add jitter + make transparent
-rhamp.violin.jitter<- ggplot(data= rhamp_no_geno)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno), alpha = 0.2) + geom_jitter(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors"), breaks = c(3, 4, 5, 6, 7))
-rhamp.violin.jitter
 
-#add in line at day 6 for survivors 
-rhamp.violin.no.jitter.line<- ggplot(data= rhamp_no_geno)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + geom_hline(aes(yintercept = 6.01), colour = "black")+ annotate(geom="text", x=2, y=6.3, label="Survivors", color = "black")  + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors"))
-rhamp.violin.no.jitter.line
-#Per family plotting 
+boxplot(rhamp_merged.df$day_of_death[grep(pattern = "F116", x = rhamp_merged.df$sample_family)] 
+        ~ rhamp_merged.df$num_alt[grep(pattern = "F116", x = rhamp_merged.df$sample_family)]
+        , ylab = "day to death", xlab = "Number alt. allele"
+        , las = 1
+        
+)
+mod <- lm(formula = rhamp_merged.df$day_of_death[grep(pattern = "F116", x = rhamp_merged.df$sample_family)] 
+          ~ rhamp_merged.df$num_alt[grep(pattern = "F116", x = rhamp_merged.df$sample_family)])
+summary(mod)
 
-#Separate data frame into families 
-rhamp_families <- separate(rhamp_no_geno, col = Sample_family, into = c("Project", "family"), sep = "_F")
+mod <- aov(formula = rhamp_merged.df$day_of_death[grep(pattern = "F116", x = rhamp_merged.df$sample_family)] 
+          ~ as.factor(rhamp_merged.df$num_alt[grep(pattern = "F116", x = rhamp_merged.df$sample_family)]))
+summary(mod)
+
+boxplot(rhamp_merged.df$day_of_death[grep(pattern = "F117", x = rhamp_merged.df$sample_family)] 
+        ~ rhamp_merged.df$num_alt[grep(pattern = "F117", x = rhamp_merged.df$sample_family)]
+        , ylab = "day to death", xlab = "Number alt. allele"
+        , las = 1
+        
+)
+
+mod <- lm(formula = rhamp_merged.df$day_of_death[grep(pattern = "F117", x = rhamp_merged.df$sample_family)] 
+          ~ rhamp_merged.df$num_alt[grep(pattern = "F117", x = rhamp_merged.df$sample_family)])
+summary(mod)
+
+
+
+
 head(rhamp_families)
 #Reorder genotypes
 rhamp_families$majority.geno <- factor(rhamp_families$majority.geno, levels = c ("homo.ref", "het", "homo.alt"))
