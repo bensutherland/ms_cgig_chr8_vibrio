@@ -170,7 +170,7 @@ for (name in names(families)) {
 combined_plot <- do.call(grid.arrange, c(plot_list, ncol=2))
 
 # Save the combined plot as a TIFF file
-ggsave("combined_plot123.tiff", combined_plot, width = 11, height = 9)
+ggsave("combined_plot.tiff", combined_plot, width = 11, height = 9)
 
 
 #######Determine proportion of each type of genotype per family 
