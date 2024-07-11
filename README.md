@@ -153,6 +153,17 @@ Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the foll
 - format as needed.    
 - #todo: update this section
 
+#### Plotting mortality by genotype ####
+Put `mort_prop_by_fam.csv` and `sample_day_of_death_and_DNA_ID.csv` in `00_archive`.     
+(#TODO: need to include these in FigShare repo)
+
+After running the above script, you should have a file called `03_results/rhAmp_per_sample_genotype_summary.csv` that will be used by the plotting script.     
+
+Use the following script interactively to plot the results:     
+`01_scripts/rhamp_06_plot_results.R`     
+
+
+
 
 ### 04. OA-exposed families ###
 Genotype samples using `wgrs_workflow`.     
