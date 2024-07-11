@@ -410,6 +410,24 @@ bcftools concat mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_m
 ```
 
 
+Next, want to combine the amp panel offspring into the wgrs+panel parent data:     
+```
+# Create output for isec
+mkdir 03_results/isec_output_wgrs_panel_parents_and_panel_offspr
+
+# Index the merged wgrs and panel parent datafile
+bcftools index 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf
+
+# Compare the amp panel offspring and amp panel + wgrs parent datafiles
+bcftools isec ./03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead.bcf -p 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/
+
+# Combine the amp panel offspring loci that are present in the amp panel + wgrs parent datafile with the amp panel + wgrs parent datafile
+bgzip 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/0003.vcf
+bcftools index 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/0003.vcf.gz
+bcftools merge 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/0003.vcf.gz 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf -Ob -o 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci_and_offspr_shared_panel_loci.bcf
+
+bcftools merge 
+```
 
 
 
