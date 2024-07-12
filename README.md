@@ -346,71 +346,84 @@ ls *.vcf.gz | xargs -n 1 bcftools index
 
 ##### Next phase #####
 Now that the genotypes by panel have been confirmed to be finding the same results as the wgrs data, the next step will be as follows:      
-a) exclude loci that are present in the panel datafile:       
+
+a) exclude loci from the wgrs parent file that are present in the panel datafile:       
+Assumes you have put the 'source' files into the folders as specified below.    
 ```
-cd ..
-mkdir compare_amp_panel_and_wgrs_parents_filtered_loci
-cd 00_source_materials/parent_wgrs_genotypes/
-bcftools index mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf
-cd ../..
+# copy the filtered parent wgrs file into the repo, and index
+cp -l ../00_source_materials/parent_wgrs_genotypes/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./03_results/
+bcftools index 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf
 
-# compare the panel loci against the filtered wgrs loci
-bcftools isec ./00_source_materials/parent_wgrs_genotypes/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./ms_cgig_chr8/03_results/amp_panel_all_parents_roslin_rehead.bcf -p compare_amp_panel_and_wgrs_parents_filtered_loci/ 
+# the SNPlift'd parent panel file should already be in the repo
+# 03_results/amp_panel_all_parents_roslin_rehead.bcf
 
+# Create a folder for isec output
+mkdir 03_results/isec_output_wgrs_filt_parents_and_panel_offspr
+
+# Run isec with flag to collapse all loci regardless of matching alleles
+bcftools isec --collapse all ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./03_results/amp_panel_all_parents_roslin_rehead.bcf -p 03_results/isec_output_wgrs_filt_parents_and_panel_offspr 
+
+## Interpretation:    
 # 0000.vcf = private to wgrs
 # 0001.vcf = private to panel
-# 0002.vcf = records from panel shared in both
-# 0003.vcf = records from wgrs shared in both
+# 0002.vcf = records from wgrs shared in both
+# 0003.vcf = records from panel shared in both
 
 # Therefore the desired file is 0000.vcf
-cd ms_cgig_chr8
-cp -l ../compare_amp_panel_and_wgrs_parents_filtered_loci/0000.vcf ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf
+cp -l 03_results/isec_output_wgrs_filt_parents_and_panel_offspr/0000.vcf ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf
 
-cd 03_results
+```
 
-bcftools query -l mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf > wgrs_samples_original_names.txt
+b) Now that the wgrs has all overlapping loci with panel file removed, prepare the wgrs file to be combined:       
+```
+# Prepare to rename wgrs samples so they match between the files
+bcftools query -l 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf > 03_results/wgrs_parents_orgn_names.txt
+# ...then manually annotate the file to separate the old_name and new_name with whitespace, single line per sample
 
-# manually annotate the file to separate the old_name and new_name with whitespace, single line per sample
+# Rename in the VCF file
+bcftools reheader --samples 03_results/wgrs_parents_orgn_names.txt -o ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed.vcf ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf
 
-bcftools reheader --samples wgrs_samples_original_names.txt -o ./mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead.vcf ./mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf
+# Collect the new wgrs parent names and sort the names into a file
+bcftools query -l 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed.vcf | sort > ./03_results/sorted_wgrs_samples.txt
 
-# Get the sample names and sort them
-bcftools query -l mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead.vcf | sort > ./sorted_wgrs_samples.txt
+# Sort in the VCF file
+bcftools view -S 03_results/sorted_wgrs_samples.txt ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed.vcf -o 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed_sorted_samples.vcf
 
-# Then sort in the VCF file itself
-bcftools view -S sorted_wgrs_samples.txt ./mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead.vcf -o mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead_sorted_samples.vcf
+# Compress and index 
+bgzip 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed_sorted_samples.vcf
+bcftools index 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed_sorted_samples.vcf.gz
 
-# Compress with bgzip
-bgzip mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead_sorted_samples.vcf
+```
 
-# Index
-bcftools index mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead_sorted_samples.vcf.gz
+c) Prepare the panel file to be combined:       
+```
+# Prepare to rename panel samples so they match between the files
+bcftools query -l 03_results/amp_panel_all_parents_roslin_rehead.bcf > 03_results/amp_panel_parents_original_names.txt
+# ...then manually annotate the file to separate the old_name and new_name with whitespace, single line per sample
 
-# Do the same to the amp panel parent file
-bcftools query -l amp_panel_all_parents_roslin_rehead.bcf > amp_panel_parents_original_names.txt
-# manually edit
+# Rename in the VCF file
+bcftools reheader --samples 03_results/amp_panel_parents_original_names.txt 03_results/amp_panel_all_parents_roslin_rehead.bcf -o 03_results/amp_panel_all_parents_roslin_rehead_renamed.bcf
 
-# Rename
-bcftools reheader --samples amp_panel_parents_original_names.txt amp_panel_all_parents_roslin_rehead.bcf -o amp_panel_all_parents_roslin_rehead_rename.bcf
-
-# Get the sample names and sort them
+# Collect the new amp panel parent names and sort the names into a file
 bcftools query -l amp_panel_all_parents_roslin_rehead_rename.bcf | sort > sorted_amp_parents_samples.txt
 
-# Sort the actual BCF file
-bcftools view -S sorted_amp_parents_samples.txt ./amp_panel_all_parents_roslin_rehead_rename.bcf -o amp_panel_all_parents_roslin_rehead_rename_sorted_samples.bcf
+# Sort in the BCF file
+bcftools view -S 03_results/sorted_amp_parents_samples.txt ./03_results/amp_panel_all_parents_roslin_rehead_renamed.bcf -o 03_results/amp_panel_all_parents_roslin_rehead_renamed_sorted_samples.vcf
 
-# Index
-bcftools index amp_panel_all_parents_roslin_rehead_rename_sorted_samples.bcf
+# Compress and index
+bgzip 03_results/amp_panel_all_parents_roslin_rehead_renamed_sorted_samples.vcf
+bcftools index 03_results/amp_panel_all_parents_roslin_rehead_renamed_sorted_samples.vcf.gz
 
-# Finally, combine the two
-bcftools concat mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_rehead_sorted_samples.vcf.gz amp_panel_all_parents_roslin_rehead_rename_sorted_samples.bcf -Ob -o wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf
+```
 
-
+d) Combine the parent data with bcftools concat
+```
+bcftools concat 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed_sorted_samples.vcf.gz 03_results/amp_panel_all_parents_roslin_rehead_renamed_sorted_samples.vcf.gz -Ob -o 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf
 
 ```
 
 
-Next, want to combine the amp panel offspring into the wgrs+panel parent data:     
+e) Next, want to combine the amp panel offspring into the wgrs+panel parent data:     
 ```
 # Create output for isec
 mkdir 03_results/isec_output_wgrs_panel_parents_and_panel_offspr
