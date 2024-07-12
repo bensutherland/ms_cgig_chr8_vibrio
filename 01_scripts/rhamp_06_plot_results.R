@@ -16,6 +16,7 @@ rm(current.path)
 #install.packages("gridExtra")
 #install.packages("gridGraphics")
 #install.packages("cowplot")
+#install.packages("ggpubrr")
 
 library(ggplot2)
 library(tidyr)
@@ -23,6 +24,7 @@ library(dplyr)
 library(gridGraphics)
 library(gridExtra)
 library(cowplot)
+library(ggpubr)
 
 # Set user variables
 sample_id_interp.FN <- "00_archive/sample_day_of_death_and_DNA_ID.csv"
@@ -118,6 +120,8 @@ F117.plot   <-  ggplot(rhamp_family_117, aes(x = as.factor(num_alt), y= day_of_d
                   theme(axis.text = element_text(size = 12), 
                         axis.title = element_text(size = 14))+ 
   theme_classic()
+
+
                 
 final_fig <- ggarrange(F114.plot, F115.plot, F116.plot, F117.plot
                 , labels = c("A", "B", "C", "D")
