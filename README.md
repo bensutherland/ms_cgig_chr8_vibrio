@@ -453,7 +453,21 @@ bcftools merge 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf 03
 
 ```
 
+#### Imputation ####
+Create a reduced dataset for testing:     
+```
+# Copy the file into a new folder, and index
+cp -l 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci_amp_panel_offspring_loci.bcf ./04_impute_panel/
 
+# Subset only a single chr for testing
+bcftools view 04_impute_panel/wgrs_filtered_parent_loci_amp_panel_parent_loci_amp_panel_offspring_loci.bcf --regions NC_047559.1 -Ob -o 04_impute_panel/wgrs_filtered_parent_loci_amp_panel_parent_loci_amp_panel_offspring_loci_NC_047559.1.bcf   
+ 
+```        
+
+Prepare file for AlphaImpute2 using Rscript:    
+
+
+`AlphaImpute2 -genotypes 04_impute_panel/genos.txt -pedigree 04_impute_panel/pedigree_annot.csv -out ai2test -maxthreads 1`
 
 
 
