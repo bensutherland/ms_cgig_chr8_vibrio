@@ -347,6 +347,7 @@ ls *.vcf.gz | xargs -n 1 bcftools index
 ##### Next phase #####
 Now that the genotypes by panel have been confirmed to be finding the same results as the wgrs data, the next step will be as follows:      
 
+##### Combine parent wgrs + panel data #####
 a) exclude loci from the wgrs parent file that are present in the panel datafile:       
 Assumes you have put the 'source' files into the folders as specified below.    
 ```
@@ -420,26 +421,36 @@ d) Combine the parent data with bcftools concat
 ```
 bcftools concat 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed_sorted_samples.vcf.gz 03_results/amp_panel_all_parents_roslin_rehead_renamed_sorted_samples.vcf.gz -Ob -o 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf
 
-```
-
-
-e) Next, want to combine the amp panel offspring into the wgrs+panel parent data:     
-```
-# Create output for isec
-mkdir 03_results/isec_output_wgrs_panel_parents_and_panel_offspr
-
-# Index the merged wgrs and panel parent datafile
+# Index
 bcftools index 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf
 
-# Compare the amp panel offspring and amp panel + wgrs parent datafiles
+```
+
+##### Combine panel offspring file with wgrs+panel parent file #####
+a) Identify loci in the offspring panel file that overlap with the wgrs+panel parent file     
+```
+# Use isec to compare the files (no need for --collapse here, want only common shared REF alleles)
+mkdir 03_results/isec_output_wgrs_panel_parents_and_panel_offspr
 bcftools isec ./03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead.bcf -p 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/
 
-# Combine the amp panel offspring loci that are present in the amp panel + wgrs parent datafile with the amp panel + wgrs parent datafile
-bgzip 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/0003.vcf
-bcftools index 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/0003.vcf.gz
-bcftools merge 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/0003.vcf.gz 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf -Ob -o 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci_and_offspr_shared_panel_loci.bcf
+## Interpretation:    
+# 0000.vcf = private to parents (wgrs+panel)
+# 0001.vcf = private to offspring (panel)
+# 0002.vcf = records from parents (wgrs+panel) shared in both
+# 0003.vcf = records from offspring (panel) shared in both
 
-bcftools merge 
+# Save and rename 0003.vcf
+cp 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/0003.vcf 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead_common_loci.vcf
+
+# Compress and index
+bgzip 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead_common_loci.vcf
+bcftools index 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead_common_loci.vcf.gz
+```
+
+b) Combine the wgrs+panel parent data with the panel offspring data
+```
+bcftools merge 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead_common_loci.vcf.gz -Ob -o 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci_amp_panel_offspring_loci.bcf
+
 ```
 
 
