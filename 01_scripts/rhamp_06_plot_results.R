@@ -82,6 +82,12 @@ head(rhamp_merged.df)
 
 # Separate data frame into families 
 rhamp_merged.df  <- separate(rhamp_merged.df, col = sample_family, into = c("project", "family"), sep = "_F", remove = F)
+
+#add a new column "mortality" to each data frame in the families list, encoding “died” as 1 and “survived” as 0 based on the day_of_death column.
+rhamp_merged.df <- rhamp_merged.df %>%
+  mutate(mortality = ifelse(`day_of_death` %in% 3:6, 1, 0))
+
+#Subset families
 rhamp_family_114 <- subset(rhamp_merged.df, family == "114")
 rhamp_family_115 <- subset(rhamp_merged.df, family == "115")
 rhamp_family_116 <- subset(rhamp_merged.df, family == "116")
@@ -190,13 +196,96 @@ rhamp_families$majority.geno <- factor(rhamp_families$majority.geno, levels = c 
 rhamp_families <- rhamp_families %>%
   mutate(Mortality = ifelse(`day_of_death` %in% 3:6, 1, 0))
 
-#Separate into indiivudal families:
-rhamp_family_114 <-subset(rhamp_families, family == "114")
-rhamp_family_115 <-subset(rhamp_families, family == "115")
-rhamp_family_116 <-subset(rhamp_families, family == "116")
-rhamp_family_117 <-subset(rhamp_families, family == "117")
+
+#### 03. Mortality (dead or alive) as function of # individuals versus number of alternate alleles#### 
+
+# Make list of all families
+families <- list(rhamp_family_114, rhamp_family_115, rhamp_family_116, rhamp_family_117)
+names(families) <- c("114", "115", "116", "117")
+
+#set colour pallet
+cbbPalette <- c("#CCCCCC", "#444444")
+
+#create empty list for storing plots
+plot_list <- list()
+
+# Loop and create bar plot for all families: mortality (dead versus alive) versus number of alt alleles. Assumes your data frame is named rhamp_family_114, rhamp_family_115, etc.
+for (name in c("114", "115", "116", "117")) {
+ 
+  mort_barplot.df <- get(paste0("rhamp_family_", name))
+  
+  # Convert num_alt and mortality to factors
+  mort_barplot.df$num_alt <- as.factor(mort_barplot.df$num_alt)
+  mort_barplot.df$mortality <- as.factor(mort_barplot.df$mortality)
+  
+  # Group and summarize number of died/survivors within each family
+  count_data <- mort_barplot.df %>%
+    group_by(num_alt, mortality) %>%
+    summarise(count = n())
+  
+  # Convert Mortality back to character for the plot
+  count_data$mortality <- ifelse(count_data$mortality == "1", "Died", "Survived")
+  
+  # Create bar plot
+  p <- ggplot(count_data, aes(x = num_alt, y = count, fill = mortality)) +
+    geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+    labs(x = "Number of Alternate Alleles", y = "# Individuals", fill = "Mortality") +
+    theme_classic() + theme(legend.position = "none") +
+    scale_fill_manual(values = cbbPalette) + theme(axis.text = element_text(size= 12),axis.title = element_text(size = 14))
+  
+  # Add the plot to the list
+  plot_list[[name]] <- p
+}
+
+# Combine barplots in list into one figure
+final_bar <- ggarrange(plotlist = plot_list, labels = c("A", "B", "C", "D"), ncol = 2, nrow = 2)
+
+#Save as PDF
+pdf(file = "03_results/barplot_#individuals_mortality_by_num_alt_alleles.pdf", width = 8, height = 5.5)
+print(final_bar)
+dev.off()
+print(final_bar)
 
 
+###TODO Fix and adjust code to use num alt alleles
+
+####04. Determine proportion of each type of genotype per family ####
+#Make new data frame
+rhamp.prop <- as.data.frame(families)
+
+#Calculate proportions of survivors versus morts
+rhamp.prop <- rhamp.prop %>%
+  group_by(family, num_alt) %>%
+  summarise(count = n()) %>%
+  mutate(prop = count / sum(count))
+
+#Make bar plot
+geno.prop <- ggplot(rhamp.prop, aes(x = family, y = prop, fill = num_alt)) + geom_bar(stat = "identity", position = "dodge") + geom_text(aes(label = paste0(round(prop*100, 0), "%")), position = position_dodge(width = 0.9), vjust = -0.25) + scale_y_continuous(labels = scales::percent, limits = c(0, 1)) + ylab("Percentage in Family") + xlab("Family") + labs(fill = "Genotype") + theme_classic() +  theme(axis.text = element_text(size = 28), axis.title = element_text(size = 22), legend.key.size = unit(2, 'cm'), legend.title = element_text(size = 22), legend.text = element_text(size = 22)) 
+geno.prop
+
+
+####05.Make bar plot of %Survival and % Mortality for all families including non-mapping + control#### 
+mortalitybarplot <- read.csv("mortalitybarplot.csv")
+#Convert % to proportions
+mortalitybarplot$survival <- mortalitybarplot$survival / 100
+mortalitybarplot$death <- mortalitybarplot$death / 100
+
+#Switch F118 to Control
+mortalitybarplot$Family[mortalitybarplot$Family == "118"] <- "Control"
+
+#convert to long format
+mort_long <- reshape2::melt(mortalitybarplot, id.vars = "Family", variable.name = "status", value.name = "percent")
+
+#Relabel family as chr
+mort_long$Family <- as.character(mort_long$Family)
+
+#Make plot
+mort_bar <- ggplot(mort_long, aes(x = Family, y = percent, fill = status)) + geom_bar(stat = "identity") + labs(x = "Family", y = "Proportion", fill = "Status") + theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + scale_fill_discrete(name = "Status", labels = c("Survival(%)", "Mortality(%)"))
+
+print(mort_bar)
+
+
+####06. Basic violin and boxplot for genotype versus mortality####
 
 #Looping to make box plot and violin plot for every family.
 
@@ -214,8 +303,8 @@ for (f in families) {
   
   # save and plot the box plot for each family 
   tiff(paste0("boxplot_", f, ".tiff"), width =8.95275591, height = 10.102322, units = "in", res = 300) 
-
- 
+  
+  
   boxplot <- ggplot(data = rhamp_family) + geom_boxplot(aes(x = majority.geno, y = day_of_death, fill = majority.geno)) + labs(x = "Genotype", y = "Day of Death") + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + theme(axis.text = element_text(size = 28),axis.title = element_text(size = 22),legend.key.size = unit(4, 'cm'),legend.title = element_text(size = 22),legend.text = element_text(size = 22), legend.position = "none") + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 15, fontface = "bold") 
   
   print(boxplot)
@@ -250,78 +339,3 @@ graphics.off()
 tiff("combined_violins.tiff", width = 11, height = 9, units = "in", res = 300)
 grid.arrange(grobs = violins, nrow = 2, ncol = 2)
 graphics.off()
-
-
-#### Making a bar plot based on genotype and alive vs dead per family 
-
-
-# List of all families
-families <- list(rhamp_family_114, rhamp_family_115, rhamp_family_116, rhamp_family_117)
-names(families) <- c("114", "115", "116", "117")
-
-plot_list <- list()
-
-# Loop through each family
-for (name in names(families)) {
-  # Convert majority.geno and Mortality to factor
-  families[[name]]$majority.geno <- as.factor(families[[name]]$majority.geno)
-  families[[name]]$Mortality <- as.factor(families[[name]]$Mortality)
-  
-  # Create count data
-  count_data <- families[[name]] %>%
-    group_by(majority.geno, Mortality) %>%
-    summarise(Count = n())
-  
-  # Convert Mortality back to character for the plot
-  count_data$Mortality <- ifelse(count_data$Mortality == "1", "Died", "Survived")
-  
-  # Create bar plot
-  p <- ggplot(count_data, aes(x=majority.geno, y=Count, fill=Mortality)) +
-    geom_bar(stat="identity", position=position_dodge()) +
-    labs(x="Genotype", y="Count", fill="Mortality") +
-    theme_classic() + ggtitle(paste("F", name, sep=""))
-  
-  # Add the plot to the list
-  plot_list[[name]] <- p
-}
-
-# Combine all plots into one
-combined_plot <- do.call(grid.arrange, c(plot_list, ncol=2))
-
-# Save the combined plot as a TIFF file
-ggsave("combined_plot.tiff", combined_plot, width = 11, height = 9)
-
-
-#######Determine proportion of each type of genotype per family 
-#Make new data frame
-rhamp.prop <- as.data.frame(rhamp_families)
-#Calculate proportions 
-rhamp.prop <- rhamp.prop %>%
-  group_by(family, majority.geno) %>%
-  summarise(count = n()) %>%
-  mutate(prop = count / sum(count))
-#Make bar plot
-geno.prop <- ggplot(rhamp.prop, aes(x = family, y = prop, fill = majority.geno)) + geom_bar(stat = "identity", position = "dodge") + geom_text(aes(label = paste0(round(prop*100, 0), "%")), position = position_dodge(width = 0.9), vjust = -0.25) + scale_y_continuous(labels = scales::percent, limits = c(0, 1)) + ylab("Percentage in Family") + xlab("Family") + labs(fill = "Genotype") + theme_classic() +  theme(axis.text = element_text(size = 28), axis.title = element_text(size = 22), legend.key.size = unit(2, 'cm'), legend.title = element_text(size = 22), legend.text = element_text(size = 22)) 
-geno.prop
-
-######Make bar plot of %Survival and % Mortality for all families including non-mapping + control 
-mortalitybarplot <- read.csv("mortalitybarplot.csv")
-#Convert % to proportions
-mortalitybarplot$survival <- mortalitybarplot$survival / 100
-mortalitybarplot$death <- mortalitybarplot$death / 100
-
-#Switch F118 to Control
-mortalitybarplot$Family[mortalitybarplot$Family == "118"] <- "Control"
-
-#convert to long format
-mort_long <- reshape2::melt(mortalitybarplot, id.vars = "Family", variable.name = "status", value.name = "percent")
-
-#Relabel family as chr
-mort_long$Family <- as.character(mort_long$Family)
-
-#Make plot
-mort_bar <- ggplot(mort_long, aes(x = Family, y = percent, fill = status)) + geom_bar(stat = "identity") + labs(x = "Family", y = "Proportion", fill = "Status") + theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + scale_fill_discrete(name = "Status", labels = c("Survival(%)", "Mortality(%)"))
-
-mort_bar
-
-
