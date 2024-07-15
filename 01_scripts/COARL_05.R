@@ -40,13 +40,21 @@ cross_and_pheno.df$family.id <- paste0("family_", cross_and_pheno.df$family)
 
 #### Which are the top loci? ####
 # Limit by chr
-#target_chr <- "Chr05"
+target_chr <- "Chr05"
 #target_chr <- "Chr02"
 
 gemma_gwas_subset.df <- gemma_gwas[gemma_gwas$chr==target_chr, ]
 gemma_gwas_subset.df <- gemma_gwas_subset.df[with(gemma_gwas_subset.df, order(gemma_gwas_subset.df$p_wald, decreasing = F)), ]
 gemma_gwas_subset.df <- gemma_gwas_subset.df[, c("chr", "rs", "ps", "af", "p_wald")]
 head(gemma_gwas_subset.df, n = 25)
+
+# What is the p-value threshold? 
+print("To be considered significant, the p_wald is less than... ") 
+print(0.05 / ncol(geno_sim))
+
+write.table(x = gemma_gwas_subset.df, file = paste0("03_results/", "gwas_results_subset_", pheno, "_", target_chr, ".txt")
+            , quote = F, sep = "\t", row.names = F, col.names = T
+)
 
 ## Pick a locus
 ## Chr05
