@@ -1,5 +1,5 @@
 # Data input and formatting of raw rhAmp assay data (csv format)
-# B. Sutherland, Liam Surry, VIU (initialized 2024-01-11)
+# B. Sutherland, Liam Surry, Ally Gignac, VIU (initialized 2024-01-11)
 
 #### 00. Front Matter ####
 # Clear space
@@ -11,7 +11,6 @@ current.path <- gsub(pattern = "\\/01_scripts", replacement = "", x = current.pa
 setwd(current.path)
 
 # Set user variables
-sample_info.FN <- "00_archive/CHRM8_AAB24_Liam_Surry_2024-06-07.csv"
 
 ## Load libraries
 #install.packages("dplyr")
@@ -32,8 +31,8 @@ for(i in 1:length(filenames.vec)){
   
   # Make a short filename for use in saving out
   filename.FN
-  short_filename.FN <- gsub(pattern = "_202.*", replacement = "", x = filename.FN)
-  short_filename.FN <- gsub(pattern = "02_input_data//", replacement = "", x =  short_filename.FN)
+  short_filename.FN <- gsub(pattern = "_202.*", replacement = "", x = filename.FN) # remove date and suffix
+  short_filename.FN <- gsub(pattern = "02_input_data//", replacement = "", x =  short_filename.FN) # remove folder
   
   # Reporting
   print(paste0("Working on plate ", short_filename.FN))
@@ -72,6 +71,8 @@ for(i in 1:length(filenames.vec)){
   # Add full identifier
   data_wide.df$full.id <- NA
   data_wide.df$full.id <- paste0(short_filename.FN, "__", data_wide.df$Well)
+  
+  head(data_wide.df)
   
   
   #### 02. Inspecting difference between the dyes ####

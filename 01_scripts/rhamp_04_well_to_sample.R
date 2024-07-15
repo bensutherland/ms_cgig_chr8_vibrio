@@ -13,6 +13,9 @@ current.path <- gsub(pattern = "\\/01_scripts", replacement = "", x = current.pa
 setwd(current.path)
 rm(current.path)
 
+# Set user variables
+sample_info.FN <- "00_archive/CHRM8_AAB24_Liam_Surry_2024-06-07.csv" # interp file
+
 # Load data
 load(file = "03_results/prepared_rhamp_results.RData")
 
@@ -44,7 +47,6 @@ head(data_annot.df)
 dim(data_annot.df)
 
 write.table(x = data_annot.df, file = "03_results/rhAmp_full_results.txt", quote = F, sep = "\t", row.names = F)
-
 
 
 # Next: go to 01_scripts/rhamp_05_eval_tech_reps.R
