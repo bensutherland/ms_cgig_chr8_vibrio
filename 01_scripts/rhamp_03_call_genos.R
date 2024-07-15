@@ -8,22 +8,22 @@
 # Based on dyes, call geno
 for(j in 1:nrow(all_plates.df)){
   
-  # Both dyes are NA, uncalled
+  # If both dyes are NA, set value as uncalled
   if(is.na(all_plates.df$Cq.fam.corr[j]) & is.na(all_plates.df$Cq.vic.corr[j])){
     
     all_plates.df$geno[j] <- "no.geno"
     
-  # VIC present & FAM = NA, genotype: homozygous alternate
+  # If VIC is present & FAM is NA, set genotype: homozygous alternate
   }else if(is.na(all_plates.df$Cq.fam.corr[j]) & !is.na(all_plates.df$Cq.vic.corr[j])){
     
     all_plates.df$geno[j] <- "homo.alt"
     
-  # FAM present & VIC = NA, genotype: homozygous reference 
+  # If FAM is present & VIC is NA, set genotype: homozygous reference 
   }else if(!is.na(all_plates.df$Cq.fam.corr[j]) & is.na(all_plates.df$Cq.vic.corr[j])){
     
     all_plates.df$geno[j] <- "homo.ref"
     
-  # VIC present & FAM present, genotype: heterozygous
+  # If VIC is present & FAM is present, set genotype: heterozygous
   }else if(!is.na(all_plates.df$Cq.fam.corr[j]) & !is.na(all_plates.df$Cq.vic.corr[j])){
     
     all_plates.df$geno[j] <- "het"
