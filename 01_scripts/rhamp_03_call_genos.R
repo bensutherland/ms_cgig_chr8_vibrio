@@ -35,7 +35,7 @@ for(j in 1:nrow(all_plates.df)){
 # Genos
 table(all_plates.df$geno)
 
-write.table(x = table(all_plates.df$geno), file = "03_results/rhAmp_genos.txt"
+write.table(x = all_plates.df, file = "03_results/rhAmp_genos.txt"
             , quote = F, row.names = F, col.names = F
             )
 
