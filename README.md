@@ -163,6 +163,26 @@ Use the following script interactively to plot the results:
 `01_scripts/rhamp_06_plot_results.R`     
 
 
+### 03.b. COARL3 rhAmp analysis ###
+Input files are csv files that are raw output from the genotyping platform (i.e., CFX96 instrument).     
+Copy all csv files with rhAmp results into `02_input_data`. The following column names are required, and should be standard in qPCR machine output:    
+`Well`, `Fluor`, `Content`, `Cq`    
+
+Use the script `01_scripts/rhamp_01_read_in_and_format.R` to read in the data.    
+Outputs will include plots in `03_results` of FAM - VIC and FAM vs. VIC Cq values for detecting potential false positives calls.    
+In R, the output will be a list of dataframes in wide format, one for each input file.    
+
+Use the script `01_scripts/rhamp_02_data_checking.R`     
+Based on the graphs provided in the previous script, determine the appropriate cutoff for your false positive VIC or FAM calls. These values will be set in this script.    
+Outputs of this script will be a single large dataframe with corrected heterozygote calls, based on input cutoff values for false positive detections.     
+
+Use the script `01_scripts/rhamp_03_call_genos.R`      
+This will call genotypes based on the input.     
+
+Use the script `01_scripts/rhamp_04_well_to_sample.R` to connect samples to the user-supplied annotation file. Set the annotation file variable in this script, and it should be in the following format:     
+plate	well	sample 	assay
+...the plate value should be the same as the plate section of the full.id variable, which is typically the plate name before the date.    
+
 
 
 ### 04. OA-exposed families ###
