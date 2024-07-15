@@ -1,5 +1,5 @@
 # Data analysis of formatted rhAmp data
-# B. Sutherland, Liam Surry, VIU (initialized 2024-01-11)
+# B. Sutherland, Liam Surry, Ally Gignac VIU (initialized 2024-01-11)
 
 # Note: requires that 01_scripts/rhamp_01_read_in_and_format.R has been run
 #        and remains in environment
@@ -9,8 +9,8 @@
 
 # Set variables
 # FP cutoffs
-FP_cutoff_fam.val <-  4
-FP_cutoff_vic.val <- (-4)
+FP_cutoff_fam.val <-  (-1)
+FP_cutoff_vic.val <-  (-15)
 
 
 #### Join data from all plates ####
@@ -21,7 +21,7 @@ head(data.list[[1]])
 # Combine all plates by column names
 all_plates.df <- dplyr::bind_rows(data.list)
 dim(all_plates.df)
-print(paste0("Total number of samples in dataset: ", length(unique(all_plates.df$full.id))))
+print(paste0("Total number of unique wells in dataset: ", length(unique(all_plates.df$full.id))))
 
 
 #### Missing data check ####
