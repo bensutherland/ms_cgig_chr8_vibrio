@@ -24,26 +24,19 @@ rm(current.path)
 # sessionInfo()
 
 # Set variables
-#input.FN <- "04_impute_panel/wgrs_filtered_parent_loci_amp_panel_parent_loci_amp_panel_offspring_loci_NC_047559.1.vcf"
-input.FN <- "04_impute_panel/wgrs_filtered_parent_loci_amp_panel_parent_loci_amp_panel_offspring_loci_NC_047567.1.vcf"
+#input.FN <- "12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.vcf" # subset dataset
+input.FN <- "12_impute_impute/all_inds_wgrs_and_panel.vcf"
+
 
 #### 01. Import data ####
 input.vcf <- vcfR::read.vcfR(file = input.FN)
 input.vcf
 
+
 #### 02. Prepare genotypes file ####
 genos.df <- extract.gt(input.vcf)
 dim(genos.df)
 genos.df[1:5,1:5]
-
-# backup
-#genos.df.bck <- genos.df
-#genos.df <- genos.df.bck
-
-# # debugging
-# genos.df <- head(genos.df, n = 500)
-# genos.df[1:5,1:20]
-# str(genos.df)
 
 # Convert all missing data (NA) to "9
 genos.df[is.na(genos.df)] <- "9"
@@ -81,15 +74,8 @@ head(indiv_names.df)
 genos_t.df <- cbind(indiv_names.df, genos_t.df)
 genos_t.df[1:10,1:4]
 
-# # Write output
-# write.table(x = genos_t.df, file = "04_impute_panel/genos.txt"
-#             , sep = " "
-#             , quote = F
-#             , row.names = F, col.names = F
-#             )
-
 # Write output
-data.table::fwrite(x = genos_t.df, file = "04_impute_panel/genos_fwrite.txt", quote = F, sep = " ", row.names = F, col.names = F)
+data.table::fwrite(x = genos_t.df, file = "12_impute_impute/genos.txt", quote = F, sep = " ", row.names = F, col.names = F)
 
 
 #### 03. Prepare pedigree file ####
@@ -100,8 +86,8 @@ pedigree.df$dame <- NA
 
 head(pedigree.df)
 
-write.table(x = pedigree.df, file = "04_impute_panel/pedigree.txt", sep = " ", quote = F
+write.table(x = pedigree.df, file = "12_impute_impute/pedigree.txt", sep = " ", quote = F
             , row.names = F, col.names = F
 )
 
-
+# Next, annotate the pedigree then go to AlphaImpute2 for imputation
