@@ -1,6 +1,6 @@
 # ms_cgig_chr8 imputation of amplicon panel
 
-### 05. Amplicon-based association of OsHV-1 trial ###
+### 01. Amplicon-based association of OsHV-1 trial ###
 Requires the following inputs, put in `02_input_data`:      
 - plink ped and map files from offspring genotyped by amplicon panel        
 - VCF files from parents genotyped by amplicon panel (best replicate)
@@ -11,7 +11,7 @@ Requires the following inputs, put in `02_input_data`:
 note: the .ped and .map files are used instead of the supplied VCF files for offspring due to a file format issue specific to the offspring VCF.     
 
 
-#### 05.a. Prepare input data #### 
+#### 01. Prepare input data #### 
 ##### Offspring data #####
 An issue arose where the .ped and .map files do not indicate the correct reference allele. To solve this, put the two files into `02_input_data`, clone amplitargets at the same level as this repo, and use the following script to prepare a ref allele file to inform the plink conversion:      
 `01_scripts/correct_orientation_of_plink_map.R`     
@@ -51,7 +51,7 @@ bcftools merge --file-list ./02_input_data/parent_VCF_filelist.txt -Ov -o ./02_i
 
 ```
 
-#### 05.b. Convert to chromosome assembly coordinates ####
+#### 02. Convert to chromosome assembly coordinates ####
 Clone a snplift repo for each of offspring and parent data.    
 ```
 cd ..
@@ -86,7 +86,7 @@ cp ./amp_panel_all_parents_roslin.vcf ../ms_cgig_chr8/03_results/
 ```
 
 
-#### 05.c. Combine offspring and parent data #####
+#### 03. Combine offspring and parent data #####
 ```
 # Change directory 
 cd 03_results
@@ -125,10 +125,9 @@ ls *.vcf.gz | xargs -n 1 bcftools index
 (#TODO: add details about comparing genotypes between the technologies)      
  
 
-##### Next phase #####
+#### 04. Combine offspring and parent data #####
 Now that the genotypes by panel have been confirmed to be finding the same results as the wgrs data, the next step will be as follows:      
 
-##### Combine parent wgrs + panel data #####
 a) exclude loci from the wgrs parent file that are present in the panel datafile:       
 Assumes you have put the 'source' files into the folders as specified below.    
 ```
@@ -234,7 +233,7 @@ bcftools merge 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf 03
 
 ```
 
-#### Imputation ####
+#### 05. Imputation ####
 Create a reduced dataset for testing:     
 ```
 # Copy the file into a new folder, and index
@@ -252,11 +251,11 @@ Prepare file for AlphaImpute2 using Rscript:
 
 
 
-#### 05.c. Filter VCF and prepare for gemma analysis #### 
+#### 06. Filter VCF and prepare for gemma analysis #### 
 Use script `01_scripts/chr8_oshv1_amp_02_vcf_to_gemma.R`       
 
 
-#### 05.d. Gemma analysis ####
+#### 07. Gemma analysis ####
 Put output of the above script into `03_results`, then change directly into this folder to run the following commands.     
 ```
 cd 03_results
@@ -267,7 +266,7 @@ gemma -g gwas_geno.txt -p gwas_pheno.txt -k output/gwas_all_fam.cXX.txt -n 1 -c 
 Then go to `chr8_oshv1_amp_03_gemma_results.R`.    
 
 
-#### 05.e. Compare wgrs to amp panel output ####
+#### 08. Compare wgrs to amp panel output ####
 Use the above instructions to create a corrected amp panel, snplifted VCF file, then run:      
 ```
 # Compress the VCF then index with tabix (will get error if try to read the VCF file directly)      
