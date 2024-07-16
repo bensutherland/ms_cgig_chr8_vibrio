@@ -183,19 +183,24 @@ bcftools index 11_impute_combine/parent_panel_roslin_rehead_renamed_sorted.bcf
 
 Combine the parent data with bcftools concat
 ```
-bcftools concat 11_impute_combine/parent_wgrs_only_renamed_sorted.vcf.gz 11_impute_combine/parent_panel_roslin_rehead_renamed_sorted.bcf -Ob -o 11_impute_combine/parent_wgrs_and_panel.bcf
+bcftools concat --allow-overlaps 11_impute_combine/parent_wgrs_only_renamed_sorted.vcf.gz 11_impute_combine/parent_panel_roslin_rehead_renamed_sorted.bcf -Ob -o 11_impute_combine/parent_wgrs_and_panel.bcf
 
 # Index
-bcftools index 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf
+bcftools index 11_impute_combine/parent_wgrs_and_panel.bcf
 
 ```
 
-##### Combine panel offspring file with wgrs+panel parent file #####
+### Merge parent wgrs and panel data with offspring panel data ###
 a) Identify loci in the offspring panel file that overlap with the wgrs+panel parent file     
 ```
+# Bring offspring data to folder
+cp -l 10_impute_input/offspring_panel_roslin_rehead.bcf* ./11_impute_combine/
+
+# Create isec folder to capture output
+mkdir 11_impute_combine/isec_combine_parents_and_offspring/
+
 # Use isec to compare the files (no need for --collapse here, want only common shared REF alleles)
-mkdir 03_results/isec_output_wgrs_panel_parents_and_panel_offspr
-bcftools isec ./03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead.bcf -p 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/
+bcftools isec 11_impute_combine/parent_wgrs_and_panel.bcf 11_impute_combine/offspring_panel_roslin_rehead.bcf -p 11_impute_combine/isec_combine_parents_and_offspring/
 
 ## Interpretation:    
 # 0000.vcf = private to parents (wgrs+panel)
@@ -204,16 +209,16 @@ bcftools isec ./03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf 0
 # 0003.vcf = records from offspring (panel) shared in both
 
 # Save and rename 0003.vcf
-cp 03_results/isec_output_wgrs_panel_parents_and_panel_offspr/0003.vcf 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead_common_loci.vcf
+cp 11_impute_combine/isec_combine_parents_and_offspring/0003.vcf 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf
 
 # Compress and index
-bgzip 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead_common_loci.vcf
-bcftools index 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead_common_loci.vcf.gz
+bgzip 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf
+bcftools index 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf.gz
 ```
 
 b) Combine the wgrs+panel parent data with the panel offspring data
 ```
-bcftools merge 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf 03_results/G0923-21-VIUN_corr_alleles_annot_roslin_rehead_common_loci.vcf.gz -Ob -o 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci_amp_panel_offspring_loci.bcf
+bcftools merge 11_impute_combine/parent_wgrs_and_panel.bcf 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf.gz -Ob -o 11_impute_combine/all_inds_wgrs_and_panel.bcf
 
 ```
 
