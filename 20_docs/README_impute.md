@@ -14,7 +14,7 @@ Note: each type of amp panel data needed its own subfolder because they are name
 Note: do not copy links of the VCF files, but rather full files.    
 
 ### 01. Prepare input data ### 
-##### Offspring data #####
+##### Offspring panel data #####
 Merge the data into a single multi-sample VCF file:      
 ```
 # decompress the files, then compress with bgzip
@@ -32,7 +32,7 @@ bcftools merge --file-list 10_impute_input/offspring_panel/sample_list.txt -Ov -
 
 ```
 
-##### Parent data #####
+##### Parent panel data #####
 Merge the data into a single multi-sample VCF file:      
 ```
 # decompress the files, then compress with bgzip
@@ -51,8 +51,12 @@ bcftools merge --file-list 10_impute_input/parent_panel/sample_list.txt -Ov -o 1
 ```
 note: these have novel variants also, which will need to be removed eventually (below)    
 
+##### Parent wgrs data #####
+```
+bcftools index 10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf
+```
 
-#### 02. Convert to chromosome assembly coordinates ####
+### 02. Convert to chromosome assembly coordinates ###
 Move above the repo, then clone a snplift repo for each of offspring and parent data:      
 ```
 cd ..
@@ -87,121 +91,99 @@ cp ./parent_panel_roslin.vcf ../ms_cgig_chr8/10_impute_input/
 
 ```
 
-
-#### 03. Combine offspring and parent data #####
+Return to `ms_cgig_chr8` repo, then further prepare panel data post-SNPlift:    
 ```
-# Change directory 
-cd 03_results
+# add headers
+bcftools reheader 10_impute_input/offspring_panel_roslin.vcf --fai ~/genomes/GCF_902806645.1_cgigas_uk_roslin_v1_genomic.fna.fai --output 10_impute_input/offspring_panel_roslin_rehead.vcf
 
-# Fix header after snplift for both files
-bcftools reheader G0923-21-VIUN_corr_alleles_annot_roslin.vcf --fai ~/genomes/GCF_902806645.1_cgigas_uk_roslin_v1_genomic.fna.fai --output G0923-21-VIUN_corr_alleles_annot_roslin_rehead.vcf
+bcftools reheader 10_impute_input/parent_panel_roslin.vcf --fai ~/genomes/GCF_902806645.1_cgigas_uk_roslin_v1_genomic.fna.fai --output 10_impute_input/parent_panel_roslin_rehead.vcf
 
-bcftools reheader amp_panel_all_parents_roslin.vcf --fai ~/genomes/GCF_902806645.1_cgigas_uk_roslin_v1_genomic.fna.fai --output amp_panel_all_parents_roslin_rehead.vcf
+# compress
+ls 10_impute_input/*_rehead.vcf | xargs -n 1 bgzip
 
-# Compress the snplift'ed, rehead'ed VCF files with bgzip to prepare for bcftools conversion
-ls *_roslin_rehead.vcf | xargs -n 1 bgzip
+# convert to BCF file
+bcftools view 10_impute_input/offspring_panel_roslin_rehead.vcf.gz -Ob -o 10_impute_input/offspring_panel_roslin_rehead.bcf
 
-# Convert each to .bcf file
-bcftools view G0923-21-VIUN_corr_alleles_annot_roslin_rehead.vcf.gz -Ob -o G0923-21-VIUN_corr_alleles_annot_roslin_rehead.bcf
-bcftools view amp_panel_all_parents_roslin_rehead.vcf.gz -Ob -o amp_panel_all_parents_roslin_rehead.bcf
+bcftools view 10_impute_input/parent_panel_roslin_rehead.vcf.gz -Ob -o 10_impute_input/parent_panel_roslin_rehead.bcf
 
-# Index each .bcf file
-bcftools index amp_panel_all_parents_roslin_rehead.bcf
-bcftools index G0923-21-VIUN_corr_alleles_annot_roslin_rehead.bcf
-
-# Run isec to compare between the files (note, see folder structure)
-mkdir isec_output
-bcftools isec ./G0923-21-VIUN_roslin_rehead.bcf ./amp_panel_all_parents_roslin_rehead.bcf -p isec_output/
+# index
+ls 10_impute_input/*_rehead.bcf | xargs -n 1 bcftools index
 
 ```
 
-Logically, it only makes sense to merge the parent and offspring data that are common between the two, which would mean files 0002.vcf (offspring) and 0003.vcf (parents) common to both.    
-```
-# Compress the VCF files
-ls *.vcf | xargs -n 1 bgzip
 
-# Index the VCF files
-ls *.vcf.gz | xargs -n 1 bcftools index
+### 03. Exclude panel loci from parent wgrs data ###
+Before we merge the panel and wgrs loci from the parents, we need to remove all panel loci (hotspot + novel) from the wgrs datafile to not have conflicting loci present.    
 
 ```
-(#TODO: add details about comparing genotypes between the technologies)      
- 
+# prepare an output folder for bcftools isec
+mkdir 11_impute_combine/isec_rem_panel_from_wgrs/
 
-#### 04. Combine offspring and parent data #####
-Now that the genotypes by panel have been confirmed to be finding the same results as the wgrs data, the next step will be as follows:      
-
-a) exclude loci from the wgrs parent file that are present in the panel datafile:       
-Assumes you have put the 'source' files into the folders as specified below.    
-```
-# copy the filtered parent wgrs file into the repo, and index
-cp -l ../00_source_materials/parent_wgrs_genotypes/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./03_results/
-bcftools index 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf
-
-# the SNPlift'd parent panel file should already be in the repo
-# 03_results/amp_panel_all_parents_roslin_rehead.bcf
-
-# Create a folder for isec output
-mkdir 03_results/isec_output_wgrs_filt_parents_and_panel_offspr
-
-# Run isec with flag to collapse all loci regardless of matching alleles
-bcftools isec --collapse all ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./03_results/amp_panel_all_parents_roslin_rehead.bcf -p 03_results/isec_output_wgrs_filt_parents_and_panel_offspr 
+# run isec to identify loci private to wgrs data, incl. --collapse all flag to collapse regardless of alleles.    
+bcftools isec --collapse all ./10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./10_impute_input/parent_panel_roslin_rehead.bcf -p 11_impute_combine/isec_rem_panel_from_wgrs/
 
 ## Interpretation:    
-# 0000.vcf = private to wgrs
-# 0001.vcf = private to panel
-# 0002.vcf = records from wgrs shared in both
-# 0003.vcf = records from panel shared in both
+# 0000.vcf = private to parent wgrs
+# 0001.vcf = private to parent panel
+# 0002.vcf = records from parent wgrs shared in both
+# 0003.vcf = records from parent panel shared in both
 
-# Therefore the desired file is 0000.vcf
-cp -l 03_results/isec_output_wgrs_filt_parents_and_panel_offspr/0000.vcf ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf
+# Save the private records to parent wgrs
+cp -l 11_impute_combine/isec_rem_panel_from_wgrs/0000.vcf 11_impute_combine/parent_wgrs_only.vcf
 
+# TODO: add here how to see how many matching alleles there are
 ```
 
-b) Now that the wgrs has all overlapping loci with panel file removed, prepare the wgrs file to be combined:       
+
+
+### 04. Concatenate parent panel loci into parent wgrs only data ###
+Prepare the parent wgrs-only file to be combined:       
 ```
 # Prepare to rename wgrs samples so they match between the files
-bcftools query -l 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf > 03_results/wgrs_parents_orgn_names.txt
+bcftools query -l 11_impute_combine/parent_wgrs_only.vcf > 11_impute_combine/wgrs_parents_orgn_names.txt
 # ...then manually annotate the file to separate the old_name and new_name with whitespace, single line per sample
 
 # Rename in the VCF file
-bcftools reheader --samples 03_results/wgrs_parents_orgn_names.txt -o ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed.vcf ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci.vcf
+bcftools reheader --samples 11_impute_combine/wgrs_parents_orgn_names.txt -o 11_impute_combine/parent_wgrs_only_renamed.vcf 11_impute_combine/parent_wgrs_only.vcf
 
-# Collect the new wgrs parent names and sort the names into a file
-bcftools query -l 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed.vcf | sort > ./03_results/sorted_wgrs_samples.txt
+# Create sorted text file of new names
+bcftools query -l 11_impute_combine/parent_wgrs_only_renamed.vcf | sort > 11_impute_combine/wgrs_parents_new_names_sorted.txt
 
 # Sort in the VCF file
-bcftools view -S 03_results/sorted_wgrs_samples.txt ./03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed.vcf -o 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed_sorted_samples.vcf
+bcftools view -S 11_impute_combine/wgrs_parents_new_names_sorted.txt 11_impute_combine/parent_wgrs_only_renamed.vcf -o 11_impute_combine/parent_wgrs_only_renamed_sorted.vcf
 
 # Compress and index 
-bgzip 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed_sorted_samples.vcf
-bcftools index 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed_sorted_samples.vcf.gz
+bgzip 11_impute_combine/parent_wgrs_only_renamed_sorted.vcf
 
+bcftools index 11_impute_combine/parent_wgrs_only_renamed_sorted.vcf.gz
 ```
 
-c) Prepare the panel file to be combined:       
+Prepare the parent panel data to be combined:       
 ```
+# Copy the parent panel data into the combined folder
+cp -l 10_impute_input/parent_panel_roslin_rehead.bcf 11_impute_combine/
+
 # Prepare to rename panel samples so they match between the files
-bcftools query -l 03_results/amp_panel_all_parents_roslin_rehead.bcf > 03_results/amp_panel_parents_original_names.txt
+bcftools query -l 11_impute_combine/parent_panel_roslin_rehead.bcf > 11_impute_combine/panel_parents_orgn_names.txt
 # ...then manually annotate the file to separate the old_name and new_name with whitespace, single line per sample
 
 # Rename in the VCF file
-bcftools reheader --samples 03_results/amp_panel_parents_original_names.txt 03_results/amp_panel_all_parents_roslin_rehead.bcf -o 03_results/amp_panel_all_parents_roslin_rehead_renamed.bcf
+bcftools reheader --samples 11_impute_combine/panel_parents_orgn_names.txt 11_impute_combine/parent_panel_roslin_rehead.bcf -o 11_impute_combine/parent_panel_roslin_rehead_renamed.bcf
 
 # Collect the new amp panel parent names and sort the names into a file
-bcftools query -l amp_panel_all_parents_roslin_rehead_rename.bcf | sort > sorted_amp_parents_samples.txt
+bcftools query -l 11_impute_combine/parent_panel_roslin_rehead_renamed.bcf | sort > 11_impute_combine/panel_parents_new_names_sorted.txt
 
 # Sort in the BCF file
-bcftools view -S 03_results/sorted_amp_parents_samples.txt ./03_results/amp_panel_all_parents_roslin_rehead_renamed.bcf -o 03_results/amp_panel_all_parents_roslin_rehead_renamed_sorted_samples.vcf
+bcftools view -S 11_impute_combine/panel_parents_new_names_sorted.txt 11_impute_combine/parent_panel_roslin_rehead_renamed.bcf -o 11_impute_combine/parent_panel_roslin_rehead_renamed_sorted.bcf
 
-# Compress and index
-bgzip 03_results/amp_panel_all_parents_roslin_rehead_renamed_sorted_samples.vcf
-bcftools index 03_results/amp_panel_all_parents_roslin_rehead_renamed_sorted_samples.vcf.gz
+# index
+bcftools index 11_impute_combine/parent_panel_roslin_rehead_renamed_sorted.bcf
 
 ```
 
-d) Combine the parent data with bcftools concat
+Combine the parent data with bcftools concat
 ```
-bcftools concat 03_results/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_no_panel_loci_renamed_sorted_samples.vcf.gz 03_results/amp_panel_all_parents_roslin_rehead_renamed_sorted_samples.vcf.gz -Ob -o 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf
+bcftools concat 11_impute_combine/parent_wgrs_only_renamed_sorted.vcf.gz 11_impute_combine/parent_panel_roslin_rehead_renamed_sorted.bcf -Ob -o 11_impute_combine/parent_wgrs_and_panel.bcf
 
 # Index
 bcftools index 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci.bcf
