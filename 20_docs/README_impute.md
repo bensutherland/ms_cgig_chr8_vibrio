@@ -190,7 +190,7 @@ bcftools index 11_impute_combine/parent_wgrs_and_panel.bcf
 
 ```
 
-### Merge parent wgrs and panel data with offspring panel data ###
+### 05. Merge parent wgrs and panel data with offspring panel data ###
 a) Identify loci in the offspring panel file that overlap with the wgrs+panel parent file     
 ```
 # Bring offspring data to folder
@@ -220,23 +220,50 @@ b) Combine the wgrs+panel parent data with the panel offspring data
 ```
 bcftools merge 11_impute_combine/parent_wgrs_and_panel.bcf 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf.gz -Ob -o 11_impute_combine/all_inds_wgrs_and_panel.bcf
 
+bcftools index 11_impute_combine/all_inds_wgrs_and_panel.bcf
 ```
 
-#### 05. Imputation ####
+### 06. Imputate ###
 Create a reduced dataset for testing:     
 ```
-# Copy the file into a new folder, and index
-cp -l 03_results/wgrs_filtered_parent_loci_amp_panel_parent_loci_amp_panel_offspring_loci.bcf ./04_impute_panel/
+# Copy the all-data file into the imputation folder, and index
+cp -l 11_impute_combine/all_inds_wgrs_and_panel.bcf* 12_impute_impute/
 
 # Subset only a single chr for testing
-bcftools view 04_impute_panel/wgrs_filtered_parent_loci_amp_panel_parent_loci_amp_panel_offspring_loci.bcf --regions NC_047559.1 -Ob -o 04_impute_panel/wgrs_filtered_parent_loci_amp_panel_parent_loci_amp_panel_offspring_loci_NC_047559.1.bcf   
+bcftools view 11_impute_combine/all_inds_wgrs_and_panel.bcf --regions NC_047567.1 -Ob -o 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf
+
+# Show number of panel loci
+bcftools view 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf | grep -vE '^#' - | awk '{ print $3 }' - | sort | uniq -c | sort -nk1 | less
+
+# Convert to VCF file for downstream Rscript (subset version)   
+bcftools view 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf -Ov -o 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.vcf
+
+# Convert to VCF file for downstream Rscript (full version)   
+bcftools view 12_impute_impute/all_inds_wgrs_and_panel.bcf -Ov -o 12_impute_impute/all_inds_wgrs_and_panel.vcf
  
 ```        
 
 Prepare file for AlphaImpute2 using Rscript:    
+`01_scripts/prep_bcf_for_ai2.R`    
+...this will produce `12_impute_impute/genos.txt` and `12_impute_impute/pedigree.txt`      
+
+Manually annotate the pedigree file, and resave it as space-delimited with the suffix `_annot.txt`.    
+
+Imputation     
+```
+# initialize the conda environment
+conda activate ai2
+
+# Run AlphaImpute2 on the data
+AlphaImpute2 -genotypes 12_impute_impute/genos.txt -pedigree 12_impute_impute/pedigree_annot.csv -out ai2_subset -maxthreads 12 -phase_output
+
+```
+
+Inspect results in Rscript:    
+`01_scripts/read_ai2_output.R`     
+This script will convert the ai2 genotype output, combined with the supplied VCF file for mnames, into a genind file to be used in standard genetic analysis pipelines.     
 
 
-`AlphaImpute2 -genotypes 04_impute_panel/genos.txt -pedigree 04_impute_panel/pedigree_annot.csv -out ai2test -maxthreads 1`
 
 
 
@@ -253,25 +280,5 @@ gemma -g gwas_geno.txt -p gwas_pheno.txt -k output/gwas_all_fam.cXX.txt -n 1 -c 
 ```
 
 Then go to `chr8_oshv1_amp_03_gemma_results.R`.    
-
-
-#### 08. Compare wgrs to amp panel output ####
-Use the above instructions to create a corrected amp panel, snplifted VCF file, then run:      
-```
-# Compress the VCF then index with tabix (will get error if try to read the VCF file directly)      
-bgzip G0923-21-VIUN_annot_snplift_to_roslin_corr.vcf && tabix -p vcf G0923-21-VIUN_annot_snplift_to_roslin_corr.vcf.gz      
-
-# Convert to BCF file
-bcftools view G0923-21-VIUN_annot_snplift_to_roslin_corr.vcf.gz -o G0923-21-VIUN_annot_snplift_to_roslin_corr.bcf
-
-# Index
-bcftools index G0923-21-VIUN_annot_snplift_to_roslin_corr.bcf
-bcftools index mpileup_calls.bcf    
-
-# Run isec to compare between the files (note, see folder structure)
-bcftools isec ./00_source_materials/amp_panel_genotypes/G0923-21-VIUN_annot_snplift_to_roslin_corr.bcf ./00_source_materials/parent_wgrs_genotypes/mpileup_calls.bcf -p compare_amp_panel_and_wgrs_parents_all_loci/
-
-
-```
 
 
