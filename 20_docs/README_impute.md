@@ -11,47 +11,46 @@ Requires the following inputs put in `10_impute_input`, each in its own subfolde
 
 Note: only include a single replicate per individual by the panel (pick the best replicate)   
 Note: each type of amp panel data needed its own subfolder because they are named by the barcode and therefore will overlap with other datasets.     
-
+Note: do not copy links of the VCF files, but rather full files.    
 
 ### 01. Prepare input data ### 
 ##### Offspring data #####
-An issue arose where the .ped and .map files do not indicate the correct reference allele. To solve this, put the two files into `02_input_data`, clone amplitargets at the same level as this repo, and use the following script to prepare a ref allele file to inform the plink conversion:      
-`01_scripts/correct_orientation_of_plink_map.R`     
-...this will produce `02_input_data/G0923-21-VIUN_set_allele.txt`    
+Merge the data into a single multi-sample VCF file:      
+```
+# decompress the files, then compress with bgzip
+gunzip 10_impute_input/offspring_panel/*.gz
+ls 10_impute_input/offspring_panel/*.vcf | xargs -n 1 bgzip
 
-Change directory into `02_input_data` and run the following to correct the allele to the REF/ALT from the hotspot file:    
-`plink2 --ped 02_input_data/G0923-21-VIUN.ped --map 02_input_data/G0923-21-VIUN.map --ref-allele 02_input_data/G0923-21-VIUN_set_allele.txt --recode vcf --out 02_input_data/G0923-21-VIUN_corr_alleles`     
+# index the files with bcftools
+ls 10_impute_input/offspring_panel/*.vcf.gz | xargs -n 1 bcftools index
 
-It is also necessary to add the chromosome and positional information to the VCF file:     
-To do this, download Additional File S1 from Sutherland et al. 2024, which provides the coordinates of each marker, save it as a .txt file in the present repo, `00_archive`. Then use the following script to update the contig and positional info in the provided VCF:    
-`01_scripts/chr8_oshv1_trial_amp_01_prep_vcf.R`     
+# create filelist for merging all VCF files
+ls -1 10_impute_input/offspring_panel/*.vcf.gz > 10_impute_input/offspring_panel/sample_list.txt
 
-Output: `02_input_data/G0923-21-VIUN_corr_alleles_annot.vcf.gz`    
-Decompress: `gunzip 02_input_data/G0923-21-VIUN_corr_alleles_annot.vcf.gz`
+# merge all VCF files
+bcftools merge --file-list 10_impute_input/offspring_panel/sample_list.txt -Ov -o 10_impute_input/offspring_panel.vcf
 
+```
 
 ##### Parent data #####
-Put the parent data in `02_input_data`. This data came with the correct ref allele and positional info.         
-Use the following to merge parent data into a single file:    
+Merge the data into a single multi-sample VCF file:      
 ```
-# Decompress the compressed VCF files:    
-gunzip 02_input_data/*.gz
+# decompress the files, then compress with bgzip
+gunzip 10_impute_input/parent_panel/*.gz
+ls 10_impute_input/parent_panel/*.vcf | xargs -n 1 bgzip
 
-# Compress the parent files using bgzip
-ls 02_input_data/TSVC_variants_IonCode_0*.vcf | xargs -n 1 bgzip
+# index the files with bcftools
+ls 10_impute_input/parent_panel/*.vcf.gz | xargs -n 1 bcftools index
 
-# Index the parent files using bcftools
-ls 02_input_data/TSVC_variants_IonCode_0*.vcf.gz | xargs -n 1 bcftools index
+# create filelist for merging all VCF files
+ls -1 10_impute_input/parent_panel/*.vcf.gz > 10_impute_input/parent_panel/sample_list.txt
 
-# Create filelist for merging the parent files
-ls -1 02_input_data/TSVC_variants_IonCode_0*.vcf.gz > 02_input_data/parent_VCF_filelist.txt
-
-# merge VCF files
-bcftools merge --file-list ./02_input_data/parent_VCF_filelist.txt -Ov -o ./02_input_data/amp_panel_all_parents.vcf
-
-# note: these have novel variants also, which will need to be removed eventually (below)    
+# merge all VCF files
+bcftools merge --file-list 10_impute_input/parent_panel/sample_list.txt -Ov -o 10_impute_input/parent_panel.vcf
 
 ```
+note: these have novel variants also, which will need to be removed eventually (below)    
+
 
 #### 02. Convert to chromosome assembly coordinates ####
 Clone a snplift repo for each of offspring and parent data.    
