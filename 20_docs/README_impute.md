@@ -53,36 +53,37 @@ note: these have novel variants also, which will need to be removed eventually (
 
 
 #### 02. Convert to chromosome assembly coordinates ####
-Clone a snplift repo for each of offspring and parent data.    
+Move above the repo, then clone a snplift repo for each of offspring and parent data:      
 ```
 cd ..
 git clone https://github.com/enormandeau/snplift.git snplift_offspring    
 git clone https://github.com/enormandeau/snplift.git snplift_parents
 
-cp ./ms_cgig_chr8/02_input_data/amp_panel_all_parents.vcf ./snplift_parents/04_input_vcf/     
-cp ./ms_cgig_chr8/02_input_data/G0923-21-VIUN_corr_alleles_annot.vcf ./snplift_offspring/04_input_vcf/
-
+cp ./ms_cgig_chr8/10_impute_input/offspring_panel.vcf ./snplift_offspring/04_input_vcf/
+cp ./ms_cgig_chr8/10_impute_input/parent_panel.vcf ./snplift_parents/04_input_vcf/
 ```
 
-Within each snplift repository, edit the `02_infos/snplift_config.sh` file with the following edits:    
+Within each snplift repository, edit `02_infos/snplift_config.sh`:    
+```
 - full path to the original genome (bwa indexed)
 - full path to the target genome (bwa indexed)
+- relative path to the original VCF filename
+- relative path to the new VCF filename
 - CORRECT_ALLELES=1 to convert the ref all allele when alignments are reverse complemented
-- original VCF filename
-- target (new) VCF filename
 Note: setting the `CORRECT_ID` to 0 above prevents the ID column from being recalculated, so that your original IDs are carried through to the new VCF.       
+```
 
 Run snplift for each:    
 ```
 cd snplift_offspring
 time ./snplift 02_infos/snplift_config.sh      
-cp ./G0923-21-VIUN_corr_alleles_annot_roslin.vcf ../ms_cgig_chr8/03_results/
+cp ./offspring_panel_roslin.vcf ../ms_cgig_chr8/10_impute_input/
 
 cd ..
 
 cd snplift_parents
 time ./snplift 02_infos/snplift_config.sh      
-cp ./amp_panel_all_parents_roslin.vcf ../ms_cgig_chr8/03_results/
+cp ./parent_panel_roslin.vcf ../ms_cgig_chr8/10_impute_input/
 
 ```
 
