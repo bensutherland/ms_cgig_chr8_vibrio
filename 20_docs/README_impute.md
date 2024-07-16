@@ -1,17 +1,19 @@
-# ms_cgig_chr8 imputation of amplicon panel
+# ms_cgig_chr8 amplicon-based imputation and GWAS for OsHV-1 survivorship
 
-### 01. Amplicon-based association of OsHV-1 trial ###
-Requires the following inputs, put in `02_input_data`:      
-- plink ped and map files from offspring genotyped by amplicon panel        
-- VCF files from parents genotyped by amplicon panel (best replicate)
-- genotypes from `wgrs_workflow` run of 20X parents 
-- panel contig and SNP position info: `additional_file_S1_amp_panel_design_info.txt` (put in `00_archive`)     
+### 00. Getting started ###
+Clone the present repo, all commands will occur in the repo unless indicated.    
+
+Requires the following inputs put in `10_impute_input`, each in its own subfolder as labeled:      
+- parent wgrs (20X) filtered genotypes BCF file from `wgrs_workflow` in `parent_wgrs`   
+- parent amplicon panel individual vcf.gz files in `parent_panel`   
+- offspring amplicon panel individual vcf.gz files `offspring_panel`   
 - survival phenotype data from OsHV-1 trial: `qcat992_sample_mort_pheno_2024-06-17.txt` (put in `00_archive`)     
 
-note: the .ped and .map files are used instead of the supplied VCF files for offspring due to a file format issue specific to the offspring VCF.     
+Note: only include a single replicate per individual by the panel (pick the best replicate)   
+Note: each type of amp panel data needed its own subfolder because they are named by the barcode and therefore will overlap with other datasets.     
 
 
-#### 01. Prepare input data #### 
+### 01. Prepare input data ### 
 ##### Offspring data #####
 An issue arose where the .ped and .map files do not indicate the correct reference allele. To solve this, put the two files into `02_input_data`, clone amplitargets at the same level as this repo, and use the following script to prepare a ref allele file to inform the plink conversion:      
 `01_scripts/correct_orientation_of_plink_map.R`     
