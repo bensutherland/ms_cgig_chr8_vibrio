@@ -221,14 +221,14 @@ b) Combine the wgrs+panel parent data with the panel offspring data
 bcftools merge 11_impute_combine/parent_wgrs_and_panel.bcf 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf.gz -Ob -o 11_impute_combine/all_inds_wgrs_and_panel.bcf
 
 bcftools index 11_impute_combine/all_inds_wgrs_and_panel.bcf
+
+# Copy the all-data file into the imputation folder, and index
+cp -l 11_impute_combine/all_inds_wgrs_and_panel.bcf* 12_impute_impute/
 ```
 
 ### 06. Imputate ###
-Create a reduced dataset for testing:     
+Optional: create a reduced dataset for testing:     
 ```
-# Copy the all-data file into the imputation folder, and index
-cp -l 11_impute_combine/all_inds_wgrs_and_panel.bcf* 12_impute_impute/
-
 # Subset only a single chr for testing
 bcftools view 11_impute_combine/all_inds_wgrs_and_panel.bcf --regions NC_047567.1 -Ob -o 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf
 
@@ -238,11 +238,13 @@ bcftools view 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf | grep -v
 # Convert to VCF file for downstream Rscript (subset version)   
 bcftools view 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf -Ov -o 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.vcf
 
-# Convert to VCF file for downstream Rscript (full version)   
-bcftools view 12_impute_impute/all_inds_wgrs_and_panel.bcf -Ov -o 12_impute_impute/all_inds_wgrs_and_panel.vcf
- 
 ```        
 
+```
+# Convert to VCF file for downstream Rscript (full version)   
+bcftools view 12_impute_impute/all_inds_wgrs_and_panel.bcf -Ov -o 12_impute_impute/all_inds_wgrs_and_panel.vcf
+
+``` 
 Prepare file for AlphaImpute2 using Rscript:    
 `01_scripts/prep_bcf_for_ai2.R`    
 ...this will produce `12_impute_impute/genos.txt` and `12_impute_impute/pedigree.txt`      

@@ -30,7 +30,7 @@ input.FN <- "12_impute_impute/all_inds_wgrs_and_panel.vcf"
 
 #### 01. Import data ####
 input.vcf <- vcfR::read.vcfR(file = input.FN)
-input.vcf
+#input.vcf
 
 
 #### 02. Prepare genotypes file ####
