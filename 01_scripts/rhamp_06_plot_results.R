@@ -231,7 +231,7 @@ for (name in c("114", "115", "116", "117")) {
   
   #if(name!="115"){
     
-   # p <- p + theme(legend.position = "none")
+    #p <- p + theme(legend.position = "none")
     
   #}
   
