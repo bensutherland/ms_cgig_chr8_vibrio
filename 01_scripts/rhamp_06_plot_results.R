@@ -186,15 +186,11 @@ mod <- lm(formula = rhamp_merged.df$day_of_death[grep(pattern = "F117", x = rham
           ~ rhamp_merged.df$num_alt[grep(pattern = "F117", x = rhamp_merged.df$sample_family)])
 summary(mod)
 
-
-
-
-head(rhamp_families)
-#Reorder genotypes
-rhamp_families$majority.geno <- factor(rhamp_families$majority.geno, levels = c ("homo.ref", "het", "homo.alt"))
-
-rhamp_families <- rhamp_families %>%
-  mutate(Mortality = ifelse(`day_of_death` %in% 3:6, 1, 0))
+# #Reorder genotypes
+# rhamp_families$majority.geno <- factor(rhamp_families$majority.geno, levels = c ("homo.ref", "het", "homo.alt"))
+# 
+# rhamp_families <- rhamp_families %>%
+#   mutate(Mortality = ifelse(`day_of_death` %in% 3:6, 1, 0))
 
 
 #### 03. Mortality (dead or alive) as function of # individuals versus number of alternate alleles#### 
@@ -228,10 +224,16 @@ for (name in c("114", "115", "116", "117")) {
   
   # Create bar plot
   p <- ggplot(count_data, aes(x = num_alt, y = count, fill = mortality)) +
-    geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
-    labs(x = "Number of Alternate Alleles", y = "# Individuals", fill = "Mortality") +
-    theme_classic() + theme(legend.position = "none") +
-    scale_fill_manual(values = cbbPalette) + theme(axis.text = element_text(size= 12),axis.title = element_text(size = 14))
+        geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+        labs(x = "Number of Alternate Alleles", y = "# Individuals", fill = "Mortality") +
+        theme_classic() + 
+        scale_fill_manual(values = cbbPalette) + theme(axis.text = element_text(size= 12),axis.title = element_text(size = 14))
+  
+  #if(name!="115"){
+    
+   # p <- p + theme(legend.position = "none")
+    
+  #}
   
   # Add the plot to the list
   plot_list[[name]] <- p
