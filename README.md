@@ -120,7 +120,14 @@ Convert plink files to a useable format for adegenet:
 Read the data into R using the script `01_scripts/01_import_plink_to_genind.R`           
 
 #### m. Genome-wide association study (GWAS) ####
-The `01_scripts/GWAS.R` script does the following using `populations.snps_single-SNP_per_tag_2023-10-23.vcf` and `populations.plink_2023-10-23.map` as input:    
+From `stacks_workflow`, copy the output plink map file and the VCF file into `ms_cgig_chr8/02_input_data/`.    
+
+Open `01_scripts/GWAS.R` in Rstudio interactively.    
+Inputs:    
+- `populations.snps_single-SNP_per_tag_2023-10-23.vcf`    
+- `populations.plink_2023-10-23.map`         
+
+The following steps are taken:   
 i. Changes linkage group (LG) RefSeq genome annotations to corresponding chromosome annotations and removes all other contigs in the RefSeq genome    
 ii. Imputes missing genotypes within each family independently using mean imputation    
 iii. Runs the following GWAS models using GEMMA (MAF threshold of 0.05):       
