@@ -16,7 +16,7 @@ library("adegenet")
 library("data.table")
 library("dartR")
 
-# Set working directory to the ms_scallop_popgen repo
+# Set working directory
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
 current.path <- gsub(pattern = "/01_scripts", replacement = "", x = current.path)
 setwd(current.path)
@@ -53,25 +53,21 @@ imputed_t.mat <- gsub(pattern = "\\b0\\b", replacement = "0/0", x = imputed_t.ma
 imputed_t.mat <- gsub(pattern = "\\b1\\b", replacement = "0/1", x = imputed_t.mat)
 imputed_t.mat <- gsub(pattern = "\\b2\\b", replacement = "1/1", x = imputed_t.mat)
 
-## Prepare back to VCF file format (not currently applied)
-# info.df <- rep(NA, times = nrow(imputed_t.mat))
-# info.df <- as.data.frame(info.df)
-# colnames(info.df) <- "FORMAT"
-# head(info.df)
-# 
-# imputed_t_w_fmt.mat <- cbind(info.df, imputed_t.mat)
-# dim(imputed_t_w_fmt.mat)
-# imputed_t_w_fmt.mat[1:5,1:5]
-#unique(imputed_t.mat[,which(colnames(imputed_t.mat)=="55-41F")])
-## /END/ Prepare back to VCF file format (not currently applied)
-
 # Read in the contributing VCF file
 input_vcf.FN <- "12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.vcf"
+
 
 ## Import VCF for mnames
 input.vcf <- vcfR::read.vcfR(file = input_vcf.FN)
 input.vcf
 
+# # Obtain genotypes too
+# test.df <- extract.gt(x = input.vcf, element = "GT")
+# test.df[1:5,1:5]
+# test.df[1:5, 20:25]
+# colnames(test.df)
+
+# Get mnames
 dim(input.vcf@gt)
 input.vcf@gt[1:5,1:5]
 dim(input.vcf@gt)
@@ -88,6 +84,14 @@ imputed_t.mat[1:5,1:5]
 rownames(imputed_t.mat) <- mname
 
 imputed_t.mat[1:5,1:5]
+mnames.df <- rownames(imputed_t.mat)
+mnames.df <- as.data.frame(mnames.df)
+
+imputed_t.df <- as.data.frame(imputed_t.mat)
+
+imputed_full.df <- cbind(mnames.df, imputed_t.df)
+
+fwrite(x = imputed_full.df, file = "12_impute_impute/genos_imputed_converted.txt", sep = "\t", quote = F)
 
 # Transpose again
 data.mat <- t(imputed_t.mat) 
