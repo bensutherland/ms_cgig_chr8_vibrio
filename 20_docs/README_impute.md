@@ -220,13 +220,14 @@ b) Combine the wgrs+panel parent data with the panel offspring data
 ```
 bcftools merge 11_impute_combine/parent_wgrs_and_panel.bcf 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf.gz -Ob -o 11_impute_combine/all_inds_wgrs_and_panel.bcf
 
+
 bcftools index 11_impute_combine/all_inds_wgrs_and_panel.bcf
 
 # Copy the all-data file into the imputation folder, and index
 cp -l 11_impute_combine/all_inds_wgrs_and_panel.bcf* 12_impute_impute/
 ```
 
-### 06. Imputate ###
+### 06. Imputation ###
 Optional: create a reduced dataset for testing:     
 ```
 # Subset only a single chr for testing
@@ -240,9 +241,13 @@ bcftools view 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf -Ov -o 12
 
 ```        
 
+Prepare the genotype and pedigree file for AlphaImpute2 from a VCF file:     
 ```
 # Convert to VCF file for downstream Rscript (full version)   
-bcftools view 12_impute_impute/all_inds_wgrs_and_panel.bcf -Ov -o 12_impute_impute/all_inds_wgrs_and_panel.vcf
+# Remove multiallelic sites
+bcftools view --max-alleles 2 ./12_impute_impute/all_inds_wgrs_and_panel.bcf -Ob -o 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic.bcf    
+
+bcftools view 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic.bcf -Ov -o 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic.vcf
 
 ``` 
 Prepare file for AlphaImpute2 using Rscript:    
