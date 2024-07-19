@@ -1,4 +1,4 @@
-# Convert BCF file to input needed for AlphaImpute2
+# Convert VCF file to inputs needed for AlphaImpute2
 # B. Sutherland (2024-07-12)
 
 ### Front Matter ####
@@ -14,7 +14,7 @@ library("vcfR")
 library("adegenet")
 library("data.table")
 
-# Set working directory to the ms_scallop_popgen repo
+# Set working directory
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
 current.path <- gsub(pattern = "/01_scripts", replacement = "", x = current.path)
 setwd(current.path)
@@ -24,8 +24,7 @@ rm(current.path)
 # sessionInfo()
 
 # Set variables
-#input.FN <- "12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.vcf" # subset dataset
-input.FN <- "12_impute_impute/all_inds_wgrs_and_panel.vcf"
+input.FN <- "12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic.vcf"
 
 
 #### 01. Import data ####
@@ -46,11 +45,6 @@ genos.df[1:10,1:10]
 genos.df <- gsub(pattern = "0/0", replacement = "0", x = genos.df)
 genos.df <- gsub(pattern = "0/1", replacement = "1", x = genos.df)
 genos.df <- gsub(pattern = "1/1", replacement = "2", x = genos.df)
-
-# Temporary fix, drop triallelic site
-genos.df <- gsub(pattern = "1/2", replacement = "9", x = genos.df)
-genos.df <- gsub(pattern = "0/2", replacement = "9", x = genos.df)
-genos.df <- gsub(pattern = "2/2", replacement = "9", x = genos.df)
 
 # Convert to df
 genos.df <- as.data.frame(genos.df)
