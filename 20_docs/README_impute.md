@@ -254,10 +254,14 @@ bcftools view --max-alleles 2 ./12_impute_impute/all_inds_wgrs_and_panel.bcf -Ob
 # (...)
 # where 0, 1, 2 are the number of alt alleles, and 9 is missing data  
 
-``` 
+# Split matrix into individual chr 
+01_scripts/prep_geno_matrix_for_ai2.R   
+# output will be in 12_impute_impute/ai2_input_NC_047559.1.txt 
+
+```
 Prepare file for AlphaImpute2 using Rscript:    
 `01_scripts/prep_bcf_for_ai2.R`    
-...this will produce `12_impute_impute/genos.txt` and `12_impute_impute/pedigree.txt`      
+...this will produce `12_impute_impute/pedigree.txt`      
 
 Manually annotate the pedigree file, and resave it as space-delimited with the suffix `_annot.txt`.    
 
@@ -269,12 +273,31 @@ conda activate ai2
 # Run AlphaImpute2 on the data
 AlphaImpute2 -genotypes 12_impute_impute/genos.txt -pedigree 12_impute_impute/pedigree_annot.csv -out ai2_subset -maxthreads 12 -phase_output
 
+# Or in loop
+01_scripts/run_ai2.sh
+
 ```
 
 Inspect results in Rscript:    
 `01_scripts/read_ai2_output.R`     
 This script will convert the ai2 genotype output, combined with the supplied VCF file for mnames, into a genind file to be used in standard genetic analysis pipelines.     
 
+
+Compare with 10X results:     
+The offspring were also sequenced using 10x depth by whole-genome resequencing. Compare the imputed results with the empirical results as follows:    
+```
+# Obtain 10X bcf file 
+cp ~/Documents/cgig/CHR8_wgrs/wgrs_workflow/05_genotyping/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./13_impute_compare/ 
+
+# Use bash script to pull out genotypes into text file in ai2 format
+# Edit the following script to point to the above bcf file, and run
+01_scripts/bcf_to_ai2.sh
+
+# Use the following script to rebuild the chr-level data post-imputation
+```
+
+
+```
 
 
 
