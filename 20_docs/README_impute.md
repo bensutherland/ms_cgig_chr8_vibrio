@@ -236,18 +236,23 @@ bcftools view 11_impute_combine/all_inds_wgrs_and_panel.bcf --regions NC_047567.
 # Show number of panel loci
 bcftools view 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf | grep -vE '^#' - | awk '{ print $3 }' - | sort | uniq -c | sort -nk1 | less
 
-# Convert to VCF file for downstream Rscript (subset version)   
-bcftools view 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf -Ov -o 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.vcf
-
 ```        
 
 Prepare the genotype and pedigree file for AlphaImpute2 from a VCF file:     
 ```
-# Convert to VCF file for downstream Rscript (full version)   
 # Remove multiallelic sites
 bcftools view --max-alleles 2 ./12_impute_impute/all_inds_wgrs_and_panel.bcf -Ob -o 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic.bcf    
 
-bcftools view 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic.bcf -Ov -o 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic.vcf
+# Prepare ai2 matrix
+./01_scripts/bcf_to_ai2.sh
+# produces: 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic_ai2.txt
+
+
+# the output will be in the following format:    
+# mname \t ind1 \t ind2 \t (...)
+# NC_047559.1 2945 \t 0 \t 0 \t 1 \t 9 (...)
+# (...)
+# where 0, 1, 2 are the number of alt alleles, and 9 is missing data  
 
 ``` 
 Prepare file for AlphaImpute2 using Rscript:    
