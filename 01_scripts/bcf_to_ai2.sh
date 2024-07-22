@@ -33,5 +33,6 @@ echo "Combining header with ai2 matrix"
 cat $INPUT_FOLDER/header.txt $INPUT_FOLDER/${INPUT_BCF%.bcf}_ai2_no_header.txt > $INPUT_FOLDER/${INPUT_BCF%.bcf}_ai2.txt
 
 # Remove temp file
-# TODO
+rm $INPUT_FOLDER/${INPUT_BCF%.bcf}_ai2_no_header.txt
+rm $INPUT_FOLDER/header.txt
 
