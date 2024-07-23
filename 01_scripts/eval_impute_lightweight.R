@@ -1,4 +1,4 @@
-# Read in AlphaImpute output file, evaluate imputation
+# Read in AlphaImpute outputs (imputed or 10X), evaluate imputation
 # B. Sutherland (2024-07-15)
 
 ### Front Matter ####
@@ -7,14 +7,9 @@
 
 ## Install and load packages
 #install.packages("rstudioapi")
-#install.packages("vcfR")
 #install.packages("data.table")
-#install.packages("dartR")
 library("rstudioapi")
-library("vcfR")
-library("adegenet")
 library("data.table")
-library("dartR")
 
 # Set working directory
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
@@ -26,8 +21,9 @@ rm(current.path)
 # sessionInfo()
 
 # Set variables
-input.FN     <- "12_impute_impute/genos_imputed_converted.txt"
-input_vcf.FN <- "../../CHR8_wgrs/wgrs_workflow/05_genotyping/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1._NC047567.1.vcf" 
+offspring_imputed_ai2.FN     <- "13_impute_compare/all_chr_combined.txt"
+offspring_10X_ai2.FN         <- "13_impute_compare/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_ai2.txt" 
+
 
 # Read in the imputed data
 imputed.df <- fread(file = "12_impute_impute/genos_imputed_converted.txt", sep = "\t")
