@@ -2,8 +2,8 @@
 # Convert BCF file to ai2 genotype file 
 
 # Set user variables
-INPUT_FOLDER="12_impute_impute"
-INPUT_BCF="all_inds_wgrs_and_panel_no_multiallelic.bcf"
+INPUT_FOLDER="13_impute_compare"
+INPUT_BCF="mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf"
 
 # Obtain vector of individual names from BCF file
 echo "Preparing header for ai2 matrix"
