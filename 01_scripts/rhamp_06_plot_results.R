@@ -186,12 +186,6 @@ mod <- lm(formula = rhamp_merged.df$day_of_death[grep(pattern = "F117", x = rham
           ~ rhamp_merged.df$num_alt[grep(pattern = "F117", x = rhamp_merged.df$sample_family)])
 summary(mod)
 
-# #Reorder genotypes
-# rhamp_families$majority.geno <- factor(rhamp_families$majority.geno, levels = c ("homo.ref", "het", "homo.alt"))
-# 
-# rhamp_families <- rhamp_families %>%
-#   mutate(Mortality = ifelse(`day_of_death` %in% 3:6, 1, 0))
-
 
 #### 03. Mortality (dead or alive) as function of # individuals versus number of alternate alleles#### 
 
@@ -224,11 +218,10 @@ for (name in c("114", "115", "116", "117")) {
   
   # Create bar plot
   p <- ggplot(count_data, aes(x = num_alt, y = count, fill = mortality)) +
-        geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+        geom_bar(stat = "identity", position = position_dodge(width = 1.0)) +
         labs(x = "Number of Alternate Alleles", y = "# Individuals", fill = "Mortality") +
-        theme_classic() + 
-        scale_fill_manual(values = cbbPalette) + theme(axis.text = element_text(size= 12),axis.title = element_text(size = 14))
-  
+        theme_classic() + theme(legend.position = "none") +
+        scale_fill_manual(values = cbbPalette) + theme(axis.text = element_text(size= 12),axis.title = element_text(size = 14)) 
   #if(name!="115"){
     
     #p <- p + theme(legend.position = "none")
@@ -267,27 +260,77 @@ geno.prop
 
 
 ####05.Make bar plot of %Survival and % Mortality for all families including non-mapping + control#### 
-mortalitybarplot <- read.csv("mortalitybarplot.csv")
+mortalitybarplot <- read.csv("00_archive/mortalitybarplot.csv")
+family_parental_genotypes <- read.csv("02_input_data/OSU_MBP_parental_crosses.csv")
+
 #Convert % to proportions
 mortalitybarplot$survival <- mortalitybarplot$survival / 100
 mortalitybarplot$death <- mortalitybarplot$death / 100
 
 #Switch F118 to Control
-mortalitybarplot$Family[mortalitybarplot$Family == "118"] <- "Control"
+mortalitybarplot$family[mortalitybarplot$family == "118"] <- "Control"
 
 #convert to long format
-mort_long <- reshape2::melt(mortalitybarplot, id.vars = "Family", variable.name = "status", value.name = "percent")
+mort_long <- reshape2::melt(mortalitybarplot, id.vars = "family", variable.name = "status", value.name = "percent")
 
 #Relabel family as chr
-mort_long$Family <- as.character(mort_long$Family)
+mort_long$family <- as.character(mort_long$family)
+
+#Set Colour pallete
+cbbPalette <- c("#CCCCCC", "#444444")
 
 #Make plot
-mort_bar <- ggplot(mort_long, aes(x = Family, y = percent, fill = status)) + geom_bar(stat = "identity") + labs(x = "Family", y = "Proportion", fill = "Status") + theme_classic() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + scale_fill_discrete(name = "Status", labels = c("Survival(%)", "Mortality(%)"))
+mort_bar <- ggplot(mort_long, aes(x = family, y = percent, fill = status)) + geom_bar(stat = "identity") + labs(x = "Family", y = "Proportion", fill = "Status") + theme_classic() +
+  scale_fill_manual(values = cbbPalette) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), legend.position = "none") 
 
+#Save as PDF
+pdf(file = "03_results/barplot_prop_individuals_mortality_per_family.pdf", width = 8, height = 5.5)
+print(mort_bar)
+dev.off()
 print(mort_bar)
 
+####06.Make bar plot of %Survival and % Mortality grouped by family genotypes#### 
+#merge mortality proportions and family parental crosses by genotype. Requires file "OSU_MBP_parental_crosses
+mort_proportions_and_family_crosses <- merge(mortalitybarplot, family_parental_genotypes, by = "family")
 
-####06. Basic violin and boxplot for genotype versus mortality####
+#make so genotype cross orders consistently regarless of which parent.
+order_function <- function(parent_1_genotype, parent_2_genotype) {
+  if (parent_1_genotype < parent_2_genotype) {
+    return(paste(parent_1_genotype, parent_2_genotype, sep = " x "))
+  } else {
+    return(paste(parent_2_genotype, parent_1_genotype, sep = " x "))
+  }
+}
+
+#create genotype cross column
+mort_proportions_and_family_crosses$parental_cross <- mapply(order_function, mort_proportions_and_family_crosses$parent_1_genotype, mort_proportions_and_family_crosses$parent_2_genotype)
+
+#calculate average mortality per genotype cross
+average_mortality <- mort_proportions_and_family_crosses %>%
+  group_by(parental_cross) %>%
+  summarise(average_death = mean(death))
+
+#convert to long format
+mort_proportions_and_family_crosses <- reshape2::melt(mort_proportions_and_family_crosses, 
+id.vars = c("family", "parental_cross"), variable.name = "status", value.name = "percent",measure.vars = c("survival", "death"))
+
+#Set colours                            
+cbbPalette <- c("death" = "#CCCCCC", "survival" = "#444444")  # Define your color palette
+
+#Create bar plot grouped by genotype cross 
+mort_bar_family_genotype <- ggplot(mort_proportions_and_family_crosses, aes(x = family, y = percent, fill = status)) + geom_bar(stat = "identity", position = "stack") + labs(x = "Family", y = "Proportion") + theme_classic() + scale_fill_manual(values = cbbPalette) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), legend.position = "none") + facet_grid(~ parental_cross, scales = "free_x", space = "free_x")
+
+pdf(file = "03_results/barplot_prop_individuals_mort_parental_cross_x_families.pdf", width = 8, height = 5.5)
+print(mort_bar_family_genotype)
+dev.off()
+print(mort_bar_family_genotype)
+
+#bar plot based on average mortality per parental cross 
+
+
+
+####07. Basic violin and boxplot for genotype versus mortality####
 
 #Looping to make box plot and violin plot for every family.
 
