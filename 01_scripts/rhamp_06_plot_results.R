@@ -218,7 +218,7 @@ for (name in c("114", "115", "116", "117")) {
   
   # Create bar plot
   p <- ggplot(count_data, aes(x = num_alt, y = count, fill = mortality)) +
-        geom_bar(stat = "identity", position = position_dodge(width = 1.0)) +
+        geom_bar(stat = "identity", position = position_dodge(width = 1.0), colour = "black") +
         labs(x = "Number of Alternate Alleles", y = "# Individuals", fill = "Mortality") +
         theme_classic() + theme(legend.position = "none") +
         scale_fill_manual(values = cbbPalette) + theme(axis.text = element_text(size= 12),axis.title = element_text(size = 14)) 
@@ -242,21 +242,33 @@ dev.off()
 print(final_bar)
 
 
-###TODO Fix and adjust code to use num alt alleles
-
 ####04. Determine proportion of each type of genotype per family ####
-#Make new data frame
-rhamp.prop <- as.data.frame(families)
+#Make new combined data frame
+rhamp.prop <- rbind(rhamp_family_114,rhamp_family_115,rhamp_family_116,rhamp_family_117)
 
+#Make order of genotypes homo.ref, het, homo.alt
+rhamp.prop$majority.geno <- factor(rhamp.prop$majority.geno, levels = c("homo.ref", "het", "homo.alt"))
+                                 
 #Calculate proportions of survivors versus morts
 rhamp.prop <- rhamp.prop %>%
-  group_by(family, num_alt) %>%
+  group_by(family, majority.geno) %>%
   summarise(count = n()) %>%
   mutate(prop = count / sum(count))
 
-#Make bar plot
-geno.prop <- ggplot(rhamp.prop, aes(x = family, y = prop, fill = num_alt)) + geom_bar(stat = "identity", position = "dodge") + geom_text(aes(label = paste0(round(prop*100, 0), "%")), position = position_dodge(width = 0.9), vjust = -0.25) + scale_y_continuous(labels = scales::percent, limits = c(0, 1)) + ylab("Percentage in Family") + xlab("Family") + labs(fill = "Genotype") + theme_classic() +  theme(axis.text = element_text(size = 28), axis.title = element_text(size = 22), legend.key.size = unit(2, 'cm'), legend.title = element_text(size = 22), legend.text = element_text(size = 22)) 
+#Make bar plot for percentage of each genotype in mapping families. Relabel genotypes
+geno.prop <- ggplot(rhamp.prop, aes(x = family, y = prop, fill = majority.geno)) + 
+  geom_bar(stat = "identity", position = "dodge", colour = "black") + 
+  geom_text(aes(label = paste0(round(prop*100, 0), "%")), position = position_dodge(width = 0.9), vjust = -0.25) + 
+  scale_y_continuous(labels = scales::percent, limits = c(0, 1)) + ylab("Percentage in Family") +
+  xlab("Family") + labs(fill = "Genotype") + 
+  theme_classic() + theme(axis.text = element_text(size= 12),axis.title = element_text(size = 14)) + scale_fill_manual(values = c("homo.ref" = "white", "het" = "#CCCCCC", "homo.alt" = "#444444"), labels = c("homo.ref" = "ref/ref", "het" = "ref/alt", "homo.alt" = "alt/alt"))    
+
 geno.prop
+
+#Save as PDF
+pdf(file = "03_results/proportion_genotype_mapping_family", width = 8, height = 5.5)
+print(geno.prop)
+dev.off()
 
 
 ####05.Make bar plot of %Survival and % Mortality for all families including non-mapping + control#### 
@@ -280,7 +292,7 @@ mort_long$family <- as.character(mort_long$family)
 cbbPalette <- c("#CCCCCC", "#444444")
 
 #Make plot
-mort_bar <- ggplot(mort_long, aes(x = family, y = percent, fill = status)) + geom_bar(stat = "identity") + labs(x = "Family", y = "Proportion", fill = "Status") + theme_classic() +
+mort_bar <- ggplot(mort_long, aes(x = family, y = percent, fill = status)) + geom_bar(stat = "identity", colour = "black") + labs(x = "Family", y = "Proportion", fill = "Status") + theme_classic() +
   scale_fill_manual(values = cbbPalette) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), legend.position = "none") 
 
 #Save as PDF
@@ -289,18 +301,20 @@ print(mort_bar)
 dev.off()
 print(mort_bar)
 
-####06.Make bar plot of %Survival and % Mortality grouped by family genotypes#### 
+
+####06.Make bar plot of %Survival and % Mortality grouped by family genotypes####
+
 #merge mortality proportions and family parental crosses by genotype. Requires file "OSU_MBP_parental_crosses
 mort_proportions_and_family_crosses <- merge(mortalitybarplot, family_parental_genotypes, by = "family")
 
 #make so genotype cross orders consistently regardless of which parent.
-order_function <- function(parent_1_genotype, parent_2_genotype) {
-  if (parent_1_genotype < parent_2_genotype) {
+  order_function <- function(parent_1_genotype, parent_2_genotype) {
+    if (parent_1_genotype < parent_2_genotype) {
     return(paste(parent_1_genotype, parent_2_genotype, sep = " x "))
-  } else {
+    } else {
     return(paste(parent_2_genotype, parent_1_genotype, sep = " x "))
+    }
   }
-}
 
 #create genotype cross column
 mort_proportions_and_family_crosses$parental_cross <- mapply(order_function, mort_proportions_and_family_crosses$parent_1_genotype, mort_proportions_and_family_crosses$parent_2_genotype)
@@ -321,7 +335,7 @@ id.vars = c("family", "parental_cross"), variable.name = "status", value.name = 
 cbbPalette <- c("death" = "#CCCCCC", "survival" = "#444444")  
 
 #Create bar plot grouped by genotype cross 
-mort_bar_family_genotype <- ggplot(mort_proportions_and_family_crosses, aes(x = family, y = percent, fill = status)) + geom_bar(stat = "identity", position = "stack") + labs(x = "Family", y = "Proportion") + theme_classic() + scale_fill_manual(values = cbbPalette) +
+mort_bar_family_genotype <- ggplot(mort_proportions_and_family_crosses, aes(x = family, y = percent, fill = status)) + geom_bar(stat = "identity", position = "stack", colour = "black") + labs(x = "Family", y = "Proportion") + theme_classic() + scale_fill_manual(values = cbbPalette) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), legend.position = "none") + facet_grid(~ parental_cross, scales = "free_x", space = "free_x")
 
 pdf(file = "03_results/barplot_prop_individuals_mort_parental_cross_x_families.pdf", width = 8, height = 5.5)
@@ -333,7 +347,7 @@ print(mort_bar_family_genotype)
 cbbPalette <- c("average_survival" = "#CCCCCC", "average_death" = "#444444")
 
 average_morts_parental_crosses_no_fam_barplot <- ggplot(average_mortality, aes(x = parental_cross, y = percent, fill = status)) +
-  geom_bar(stat = "identity", position = "dodge") +
+  geom_bar(stat = "identity", position = "dodge", colour = "black") +
   labs(x = "Parental Cross", y = "Proportion") +
   theme_classic() +theme(legend.position = "none") + scale_fill_manual(values = cbbPalette)
 
@@ -341,6 +355,7 @@ pdf(file = "03_results/average_mortality_parental_crosses_all_fam.pdf", width = 
 print(average_morts_parental_crosses_no_fam_barplot)
 dev.off()
 print(average_morts_parental_crosses_no_fam_barplot)
+
 
 ####07. Basic violin and boxplot for genotype versus mortality####
 
