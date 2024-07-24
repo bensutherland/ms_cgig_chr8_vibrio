@@ -266,7 +266,7 @@ geno.prop <- ggplot(rhamp.prop, aes(x = family, y = prop, fill = majority.geno))
 geno.prop
 
 #Save as PDF
-pdf(file = "03_results/proportion_genotype_mapping_family", width = 8, height = 5.5)
+pdf(file = "03_results/proportion_genotype_mapping_family.pdf", width = 8, height = 5.5)
 print(geno.prop)
 dev.off()
 
