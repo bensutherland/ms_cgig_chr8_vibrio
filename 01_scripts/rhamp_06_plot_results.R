@@ -293,7 +293,7 @@ print(mort_bar)
 #merge mortality proportions and family parental crosses by genotype. Requires file "OSU_MBP_parental_crosses
 mort_proportions_and_family_crosses <- merge(mortalitybarplot, family_parental_genotypes, by = "family")
 
-#make so genotype cross orders consistently regarless of which parent.
+#make so genotype cross orders consistently regardless of which parent.
 order_function <- function(parent_1_genotype, parent_2_genotype) {
   if (parent_1_genotype < parent_2_genotype) {
     return(paste(parent_1_genotype, parent_2_genotype, sep = " x "))
@@ -318,7 +318,7 @@ mort_proportions_and_family_crosses <- reshape2::melt(mort_proportions_and_famil
 id.vars = c("family", "parental_cross"), variable.name = "status", value.name = "percent",measure.vars = c("survival", "death"))
 
 #Set colours                            
-cbbPalette <- c("death" = "#CCCCCC", "survival" = "#444444")  # Define your color palette
+cbbPalette <- c("death" = "#CCCCCC", "survival" = "#444444")  
 
 #Create bar plot grouped by genotype cross 
 mort_bar_family_genotype <- ggplot(mort_proportions_and_family_crosses, aes(x = family, y = percent, fill = status)) + geom_bar(stat = "identity", position = "stack") + labs(x = "Family", y = "Proportion") + theme_classic() + scale_fill_manual(values = cbbPalette) +
