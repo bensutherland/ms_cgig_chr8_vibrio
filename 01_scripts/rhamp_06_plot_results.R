@@ -308,7 +308,10 @@ mort_proportions_and_family_crosses$parental_cross <- mapply(order_function, mor
 #calculate average mortality per genotype cross
 average_mortality <- mort_proportions_and_family_crosses %>%
   group_by(parental_cross) %>%
-  summarise(average_death = mean(death))
+  summarise(average_death = mean(death), average_survival = mean(survival))
+
+#Convert average mortality to long format
+average_mortality <- reshape2::melt(average_mortality, id.vars = "parental_cross", variable.name = "status", value.name = "percent")
 
 #convert to long format
 mort_proportions_and_family_crosses <- reshape2::melt(mort_proportions_and_family_crosses, 
@@ -327,8 +330,17 @@ dev.off()
 print(mort_bar_family_genotype)
 
 #bar plot based on average mortality per parental cross 
+cbbPalette <- c("average_survival" = "#CCCCCC", "average_death" = "#444444")
 
+average_morts_parental_crosses_no_fam_barplot <- ggplot(average_mortality, aes(x = parental_cross, y = percent, fill = status)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Parental Cross", y = "Proportion") +
+  theme_classic() +theme(legend.position = "none") + scale_fill_manual(values = cbbPalette)
 
+pdf(file = "03_results/average_mortality_parental_crosses_all_fam.pdf", width = 8, height = 5.5)
+print(average_morts_parental_crosses_no_fam_barplot)
+dev.off()
+print(average_morts_parental_crosses_no_fam_barplot)
 
 ####07. Basic violin and boxplot for genotype versus mortality####
 
