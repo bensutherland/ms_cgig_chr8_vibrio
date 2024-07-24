@@ -351,7 +351,7 @@ average_morts_parental_crosses_no_fam_barplot <- ggplot(average_mortality, aes(x
   labs(x = "Parental Cross", y = "Proportion") +
   theme_classic() +theme(legend.position = "none") + scale_fill_manual(values = cbbPalette)
 
-pdf(file = "03_results/average_mortality_parental_crosses_all_fam.pdf", width = 8, height = 5.5)
+pdf(file = "03_results/average_morts_parental_crosses_no_fam_barplot.pdf", width = 8, height = 5.5)
 print(average_morts_parental_crosses_no_fam_barplot)
 dev.off()
 print(average_morts_parental_crosses_no_fam_barplot)
