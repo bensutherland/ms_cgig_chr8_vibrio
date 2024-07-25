@@ -3,6 +3,7 @@
 *~
 *.csv
 *.txt
+*.ods*
 *.pdf
 *.png
 .DS_Store
