@@ -111,6 +111,26 @@ ls 10_impute_input/*_rehead.bcf | xargs -n 1 bcftools index
 
 ```
 
+Remove novel variants from both panel files    
+```
+# Remove novel variants from offspring file 
+# Identify hotspots (i.e., field 3 of VCF file has a marker name, and is not '.')
+bcftools view 10_impute_input/offspring_panel_roslin_rehead.bcf | grep -vE '^#' - | awk '$3 != "." { print $1 "\t" $2 }' - > 10_impute_input/offspring_include_snps.txt
+
+# Use bcftools to only keep these loci from VCF file
+bcftools view --targets-file 10_impute_input/offspring_include_snps.txt ./10_impute_input/offspring_panel_roslin_rehead.bcf -Ob -o 10_impute_input/offspring_panel_roslin_rehead_hotspot_only.bcf
+
+# Index
+bcftools index 10_impute_input/offspring_panel_roslin_rehead_hotspot_only.bcf
+
+## As above, but remove from parents file ##
+bcftools view 10_impute_input/parent_panel_roslin_rehead.bcf | grep -vE '^#' - | awk '$3 != "." { print $1 "\t" $2 }' - > 10_impute_input/parent_include_snps.txt
+
+bcftools view --targets-file 10_impute_input/parent_include_snps.txt ./10_impute_input/parent_panel_roslin_rehead.bcf -Ob -o 10_impute_input/parent_panel_roslin_rehead_hotspot_only.bcf
+
+bcftools index 10_impute_input/parent_panel_roslin_rehead_hotspot_only.bcf
+```
+
 
 ### 03. Exclude panel loci from parent wgrs data ###
 Before we merge the panel and wgrs loci from the parents, we need to remove all panel loci (hotspot + novel) from the wgrs datafile to not have conflicting loci present.    
@@ -120,7 +140,7 @@ Before we merge the panel and wgrs loci from the parents, we need to remove all 
 mkdir 11_impute_combine/isec_rem_panel_from_wgrs/
 
 # run isec to identify loci private to wgrs data, incl. --collapse all flag to collapse regardless of alleles.    
-bcftools isec --collapse all ./10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./10_impute_input/parent_panel_roslin_rehead.bcf -p 11_impute_combine/isec_rem_panel_from_wgrs/
+bcftools isec --collapse all ./10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./10_impute_input/parent_panel_roslin_rehead_hotspot_only.bcf -p 11_impute_combine/isec_rem_panel_from_wgrs/
 
 ## Interpretation:    
 # 0000.vcf = private to parent wgrs
@@ -133,7 +153,6 @@ cp -l 11_impute_combine/isec_rem_panel_from_wgrs/0000.vcf 11_impute_combine/pare
 
 # TODO: add here how to see how many matching alleles there are
 ```
-
 
 
 ### 04. Concatenate parent panel loci into parent wgrs only data ###
@@ -161,29 +180,29 @@ bcftools index 11_impute_combine/parent_wgrs_only_renamed_sorted.vcf.gz
 Prepare the parent panel data to be combined:       
 ```
 # Copy the parent panel data into the combined folder
-cp -l 10_impute_input/parent_panel_roslin_rehead.bcf 11_impute_combine/
+cp -l 10_impute_input/parent_panel_roslin_rehead_hotspot_only.bcf 11_impute_combine/
 
 # Prepare to rename panel samples so they match between the files
-bcftools query -l 11_impute_combine/parent_panel_roslin_rehead.bcf > 11_impute_combine/panel_parents_orgn_names.txt
+bcftools query -l 11_impute_combine/parent_panel_roslin_rehead_hotspot_only.bcf > 11_impute_combine/panel_parents_orgn_names.txt
 # ...then manually annotate the file to separate the old_name and new_name with whitespace, single line per sample
 
 # Rename in the VCF file
-bcftools reheader --samples 11_impute_combine/panel_parents_orgn_names.txt 11_impute_combine/parent_panel_roslin_rehead.bcf -o 11_impute_combine/parent_panel_roslin_rehead_renamed.bcf
+bcftools reheader --samples 11_impute_combine/panel_parents_orgn_names.txt 11_impute_combine/parent_panel_roslin_rehead_hotspot_only.bcf -o 11_impute_combine/parent_panel_roslin_rehead_hotspot_only_renamed.bcf
 
 # Collect the new amp panel parent names and sort the names into a file
-bcftools query -l 11_impute_combine/parent_panel_roslin_rehead_renamed.bcf | sort > 11_impute_combine/panel_parents_new_names_sorted.txt
+bcftools query -l 11_impute_combine/parent_panel_roslin_rehead_hotspot_only_renamed.bcf | sort > 11_impute_combine/panel_parents_new_names_sorted.txt
 
 # Sort in the BCF file
-bcftools view -S 11_impute_combine/panel_parents_new_names_sorted.txt 11_impute_combine/parent_panel_roslin_rehead_renamed.bcf -o 11_impute_combine/parent_panel_roslin_rehead_renamed_sorted.bcf
+bcftools view -S 11_impute_combine/panel_parents_new_names_sorted.txt 11_impute_combine/parent_panel_roslin_rehead_hotspot_only_renamed.bcf -o 11_impute_combine/parent_panel_roslin_rehead_hotspot_only_renamed_sorted.bcf
 
 # index
-bcftools index 11_impute_combine/parent_panel_roslin_rehead_renamed_sorted.bcf
+bcftools index 11_impute_combine/parent_panel_roslin_rehead_hotspot_only_renamed_sorted.bcf
 
 ```
 
 Combine the parent data with bcftools concat
 ```
-bcftools concat --allow-overlaps 11_impute_combine/parent_wgrs_only_renamed_sorted.vcf.gz 11_impute_combine/parent_panel_roslin_rehead_renamed_sorted.bcf -Ob -o 11_impute_combine/parent_wgrs_and_panel.bcf
+bcftools concat --allow-overlaps 11_impute_combine/parent_wgrs_only_renamed_sorted.vcf.gz 11_impute_combine/parent_panel_roslin_rehead_hotspot_only_renamed_sorted.bcf -Ob -o 11_impute_combine/parent_wgrs_and_panel.bcf
 
 # Index
 bcftools index 11_impute_combine/parent_wgrs_and_panel.bcf
@@ -194,13 +213,13 @@ bcftools index 11_impute_combine/parent_wgrs_and_panel.bcf
 a) Identify loci in the offspring panel file that overlap with the wgrs+panel parent file     
 ```
 # Bring offspring data to folder
-cp -l 10_impute_input/offspring_panel_roslin_rehead.bcf* ./11_impute_combine/
+cp -l 10_impute_input/offspring_panel_roslin_rehead_hotspot_only.bcf* ./11_impute_combine/
 
 # Create isec folder to capture output
 mkdir 11_impute_combine/isec_combine_parents_and_offspring/
 
 # Use isec to compare the files (no need for --collapse here, want only common shared REF alleles)
-bcftools isec 11_impute_combine/parent_wgrs_and_panel.bcf 11_impute_combine/offspring_panel_roslin_rehead.bcf -p 11_impute_combine/isec_combine_parents_and_offspring/
+bcftools isec 11_impute_combine/parent_wgrs_and_panel.bcf 11_impute_combine/offspring_panel_roslin_rehead_hotspot_only.bcf -p 11_impute_combine/isec_combine_parents_and_offspring/
 
 ## Interpretation:    
 # 0000.vcf = private to parents (wgrs+panel)
@@ -209,17 +228,16 @@ bcftools isec 11_impute_combine/parent_wgrs_and_panel.bcf 11_impute_combine/offs
 # 0003.vcf = records from offspring (panel) shared in both
 
 # Save and rename 0003.vcf
-cp 11_impute_combine/isec_combine_parents_and_offspring/0003.vcf 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf
+cp 11_impute_combine/isec_combine_parents_and_offspring/0003.vcf 11_impute_combine/offspring_panel_roslin_rehead_hotspot_only_common_w_parents.vcf
 
 # Compress and index
-bgzip 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf
-bcftools index 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf.gz
+bgzip 11_impute_combine/offspring_panel_roslin_rehead_hotspot_only_common_w_parents.vcf
+bcftools index 11_impute_combine/offspring_panel_roslin_rehead_hotspot_only_common_w_parents.vcf.gz
 ```
 
 b) Combine the wgrs+panel parent data with the panel offspring data
 ```
-bcftools merge 11_impute_combine/parent_wgrs_and_panel.bcf 11_impute_combine/offspring_panel_roslin_rehead_common_w_parents.vcf.gz -Ob -o 11_impute_combine/all_inds_wgrs_and_panel.bcf
-
+bcftools merge 11_impute_combine/parent_wgrs_and_panel.bcf 11_impute_combine/offspring_panel_roslin_rehead_hotspot_only_common_w_parents.vcf.gz -Ob -o 11_impute_combine/all_inds_wgrs_and_panel.bcf
 
 bcftools index 11_impute_combine/all_inds_wgrs_and_panel.bcf
 
