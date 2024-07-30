@@ -37,6 +37,7 @@ chr.vec <- gsub(pattern = "\ .*", replacement = "", x = input.dat$mname)
 chr.vec <- unique(chr.vec[grep(pattern = chr_indicator.string, x = chr.vec)])
 chr.vec
 
+#### 03. Subset the matrix into individual chr ####
 # Subset the matrix into these chr
 temp.mat <- NULL; matrix.list <- list(); output.FN <- NULL
 for(i in 1:length(chr.vec)){
@@ -76,6 +77,6 @@ for(i in 1:length(chr.vec)){
   
 }
 
-save.image(file = "12_impute_impute/prepared_matrices_for_imputation.RData")
+#save.image(file = "12_impute_impute/prepared_matrices_for_imputation.RData")
 
 # Next: run ai2 on each of the output txt files
