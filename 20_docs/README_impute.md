@@ -243,25 +243,28 @@ bcftools index 11_impute_combine/all_inds_wgrs_and_panel.bcf
 
 # Copy the all-data file into the imputation folder, and index
 cp -l 11_impute_combine/all_inds_wgrs_and_panel.bcf* 12_impute_impute/
-```
 
-### 06. Imputation ###
-Optional: create a reduced dataset for testing:     
-```
-# Subset only a single chr for testing
-bcftools view 11_impute_combine/all_inds_wgrs_and_panel.bcf --regions NC_047567.1 -Ob -o 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf
-
-# Show number of panel loci
-bcftools view 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf | grep -vE '^#' - | awk '{ print $3 }' - | sort | uniq -c | sort -nk1 | less
-
-```        
-
-Prepare the genotype and pedigree file for AlphaImpute2 from a BCF file:     
-```
 # Remove multiallelic sites
 bcftools view --max-alleles 2 ./12_impute_impute/all_inds_wgrs_and_panel.bcf -Ob -o 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic.bcf    
 
-# Prepare ai2 matrix
+```
+
+### 06. Imputation ###
+The data is now all in a single BCF file and is ready for the imputation process.     
+
+Prepare a pedigree file:      
+```
+bcftools query -l 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic.bcf > 12_impute_impute/pedigree.txt 
+
+# Annotate the above file as follows:    
+# <indiv> <sire> <dam>     
+# where if there is no sire or dam, put 0
+# save as space-delimited with the suffix `_annot.txt`.    
+```
+
+Format from BCF to AlphaImpute2:       
+```
+# Prepare ai2 matrix by building a header, and extracting info from the BCF, and converting to ai2 format
 ./01_scripts/bcf_to_ai2.sh
 # produces: 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic_ai2.txt
 
@@ -271,40 +274,36 @@ bcftools view --max-alleles 2 ./12_impute_impute/all_inds_wgrs_and_panel.bcf -Ob
 # (...)
 # where 0, 1, 2 are the number of alt alleles, and 9 is missing data  
 
-# Split ai2 matrix into individual chr 
+# Split ai2 matrix into individual chr. This requires setting the input filename, and an identifiable chromosome string.
 01_scripts/prep_geno_matrix_for_ai2.R   
 # output will be in 12_impute_impute/ai2_input_<NC_047559.1>.txt, one file per chr 
 
-# Prepare pedigree file for AlphaImpute2
-01_scripts/prep_bcf_for_ai2.R
-# note: this still contains the old method of preparing the matrix for ai2 as well, needs to be removed (#TODO)
-# ...this will produce `12_impute_impute/pedigree.txt`      
-# manually annotate the pedigree file, and resave it as space-delimited with the suffix `_annot.txt`.    
 ```
 
-
-Imputation     
+Run imputation:     
 ```
 # initialize the conda environment
 conda activate ai2
 
-# Run AlphaImpute2 on the data for each chr
+# Run AlphaImpute2 on chromosome-separated datafiles
 01_scripts/run_ai2.sh
 # produces: 12_impute_impute/ai2_input_<NC_047559.1>.genotypes and *.haplotypes
 
-# Use Rscript to transpose the .genotypes files, and drop the indnames from all but the first chr
+# Transpose chromosome-separated imputed .genotypes files, and drop marker names on all matrices but the first to prepare for recombining the files back together
 01_scripts/impute_rebuild_chr_lightweight.R
 # produces: 13_impute_compare/*.genotypes_transposed_to_combine.txt
 
-# Run the following script to combine all chr imputed data into a single file, and add marker names back in, based on the full input ai2 file
+# Combine imputed, transposed, chr-separated files back together, then add marker names back in, based on the input ai2 file (before chromosome separation) 
 01_scripts/combine_transposed_ai2_output_and_mnames.sh
 # produces: 13_impute_compare/all_chr_combined.txt
 
 ```
 
+### 07. Evaluate imputation ###
 Evaluate results by comparing the imputed data with the 10X 'empirical' data:     
 ```
 # Obtain 10X bcf file 
+cp -l ~/Documents/cgig/CHR8_wgrs/wgrs_workflow_offspring/05_genotyping/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./13_impute_compare/
 cp ~/Documents/cgig/CHR8_wgrs/wgrs_workflow/05_genotyping/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./13_impute_compare/ 
 
 # Use bash script to pull out genotypes into text file in ai2 format
@@ -315,6 +314,24 @@ cp ~/Documents/cgig/CHR8_wgrs/wgrs_workflow/05_genotyping/mpileup_calls_noindel5
 01_scripts/eval_impute_lightweight.R
 # produces plots of average concordance between methods per individual by chromosome, and other outputs to screen
 ```
+
+
+### 08. Run GWAS on imputed data and plot results ###
+Prepare GEMMA inputs:     
+`01_scripts/imputed_ai2_to_gemma.R`      
+
+Run GEMMA:    
+```
+cd 12_impute_impute
+gemma -g gwas_geno.txt -p gwas_pheno.txt -gk -maf 0.05 -o gwas_all_fam
+gemma -g gwas_geno.txt -p gwas_pheno.txt -k output/gwas_all_fam.cXX.txt -n 1 -c gwas_covar.txt  -maf 0.05 -lmm 4 -o gwas_all_fam_covar
+
+```
+
+
+Plot GEMMA outputs:    
+`01_scripts/imputed_plot_gemma_results.R`    
+
 
 
 #### 06. Filter VCF and prepare for gemma analysis #### 
@@ -331,4 +348,12 @@ gemma -g gwas_geno.txt -p gwas_pheno.txt -k output/gwas_all_fam.cXX.txt -n 1 -c 
 
 Then go to `chr8_oshv1_amp_03_gemma_results.R`.    
 
+Optional: create a reduced dataset for testing:     
+```
+# Subset only a single chr for testing
+bcftools view 11_impute_combine/all_inds_wgrs_and_panel.bcf --regions NC_047567.1 -Ob -o 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf
 
+# Show number of panel loci
+bcftools view 12_impute_impute/all_inds_wgrs_and_panel_NC_047567_1.bcf | grep -vE '^#' - | awk '{ print $3 }' - | sort | uniq -c | sort -nk1 | less
+
+```        
