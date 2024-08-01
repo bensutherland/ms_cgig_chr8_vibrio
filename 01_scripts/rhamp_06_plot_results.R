@@ -331,6 +331,10 @@ average_mortality <- reshape2::melt(average_mortality, id.vars = "parental_cross
 mort_proportions_and_family_crosses <- reshape2::melt(mort_proportions_and_family_crosses, 
 id.vars = c("family", "parental_cross"), variable.name = "status", value.name = "percent",measure.vars = c("survival", "death"))
 
+# Reorder parental cross genotypes 
+reorder_genotype <- c("(ref/ref) x (ref/ref)", "(alt/alt) x (ref/ref)", "(ref/alt) x (ref/alt)")
+mort_proportions_and_family_crosses$parental_cross <- factor(mort_proportions_and_family_crosses$parental_cross, levels = reorder_genotype)
+
 #Set colours                            
 cbbPalette <- c("death" = "#CCCCCC", "survival" = "#444444")  
 
