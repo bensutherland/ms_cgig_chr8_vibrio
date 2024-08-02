@@ -313,6 +313,21 @@ bcftools view 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic_no_MERR.v
 # note: as clean-up, you may want to delete the isec folders, as they are large
 ```
 
+#### Optional: Remove multi-mapper loci ####
+Obtain the multi-mappers from Sutherland et al. 2024, Additional File S4. Save as two csv files, `bowtie_multimappers.csv` and `bwa_multimappers.csv` into `12_impute_impute`.    
+
+Pull the loci from the latest BCF file that have marker names (i.e., they were from panel hotspots):    
+```
+bcftools view 12_impute_impute_no_novel_no_MERR/all_inds_wgrs_and_panel_no_multiallelic_no_MERR.bcf | grep -vE '^#' - | awk '$3!="." { print $0 }' - > 12_impute_impute/hotspot_loci_in_bcf.txt
+# note: this file will be used to translate from the marker name to the chr and position info, which is the way the multimappers will be removed from the ai2 input file
+```
+
+Use Rscript to identify the chromosome and position names of the multimappers, read in the latest pre-impute ai2, and drop the multimappers from the pre-impute ai2 file:  
+`01_scripts/impute_drop_multimappers_from_ai2.R`
+
+This step will also require the ai2 input file that is produced from the BCF file (see next step), which will be subset using the specific markers and written back out. Then it joins the regular workflow by splitting the ai2 file into chromosomes and running ai2.    
+
+
 ### 06. Imputation ###
 The data is now all in a single BCF file and is ready for the imputation process.     
 
@@ -396,6 +411,44 @@ gemma -g gwas_geno.txt -p gwas_pheno.txt -k output/gwas_all_fam.cXX.txt -n 1 -c 
 Plot GEMMA outputs:    
 `01_scripts/imputed_plot_gemma_results.R`    
 
+
+
+### 09. Add grandparent data ###
+Genotype grandparents with `wgrs_workflow`, then copy the filtered BCF to the present repository.     
+
+```
+# Index the two target files before running isec
+bcftools index 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic_no_MERR.bcf
+bcftools index 12_impute_impute/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP10000_miss0.1.bcf
+
+# prepare an output folder for bcftools isec
+mkdir 12_impute_impute/combine_all_inds_and_grandparents/
+
+# run isec 
+bcftools isec 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic_no_MERR.bcf 12_impute_impute/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP10000_miss0.1.bcf -p 12_impute_impute/combine_all_inds_and_grandparents/
+
+
+## Interpretation:    
+# 0000.vcf = private to all_inds_wgrs_and_panel_no_multiallelic_no_MERR.bcf
+# 0001.vcf = private to grandparents (mpileup*) 
+# 0002.vcf = records from all_inds shared in both
+# 0003.vcf = records from grandparents shared in both
+
+# Save out the target file to be combined
+bcftools view 12_impute_impute/combine_all_inds_and_grandparents/0003.vcf -Ob -o 12_impute_impute/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP10000_miss0.1_compatible.bcf
+
+# Index the output
+bcftools index 12_impute_impute/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP10000_miss0.1_compatible.bcf
+
+# Then can delete the isec folder to save space
+```
+
+Combine the all inds wgrs+panel with the grandparent RADseq     
+```
+bcftools merge 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic_no_MERR.bcf 12_impute_impute/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP10000_miss0.1_compatible.bcf -Ob -o 12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic_no_MERR_w_grandparents.bcf
+```
+
+Next, go back up to the Imputation section and run.     
 
 
 #### 06. Filter VCF and prepare for gemma analysis #### 
