@@ -23,7 +23,7 @@ rm(current.path)
 # sessionInfo()
 
 # Set variables
-input.FN             <- "12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic_ai2.txt"
+input.FN             <- "12_impute_impute/all_inds_wgrs_and_panel_no_multiallelic_no_MERR_add_16_HD_offspring_ai2.txt"
 chr_indicator.string <- "NC_047"
 
 #### 01. Import data ####
@@ -43,7 +43,7 @@ temp.mat <- NULL; matrix.list <- list(); output.FN <- NULL
 for(i in 1:length(chr.vec)){
   
   # Reporting
-  print(paste0("Working on chr ", chr.vec[i]))
+  #print(paste0("Working on chr ", chr.vec[i]))
   
   # Obtain the section of the matrix with the target chr
   
@@ -70,7 +70,7 @@ for(i in 1:length(chr.vec)){
   
   # Write out
   output.FN <- paste0("12_impute_impute/ai2_input_", chr.vec[i], ".txt")
-  print(paste0("Writing out as ", output.FN))
+  #print(paste0("Writing out as ", output.FN))
   fwrite(x = temp.mat, file = output.FN, sep = " "
          , quote = F, col.names = F, row.names = T
          )
