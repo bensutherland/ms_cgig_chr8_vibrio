@@ -42,10 +42,14 @@ empirical.df[1:5,1:5]
 
 #### 02. Prepare data for matching ####
 ## Make sample names match for imputed data
-colnames(imputed.df)
+head(colnames(imputed.df), n = 20)
 
-# Remove parents
+# Remove parents and grandparents (if present)
 imputed.df <- imputed.df[, grep(pattern = "mname|ASY2", x = colnames(imputed.df))] # remove parents, keep mname and ASY2 inds
+dim(imputed.df)
+
+# Remove 10X data (if present; this was used to support imputation in one evaluation)
+imputed.df <- imputed.df[, grep(pattern = "fastq.gz", x = colnames(imputed.df), invert = T)] # remove parents, keep mname and ASY2 inds
 dim(imputed.df)
 
 # Remove string '_ReAMP' from the end of sample names
