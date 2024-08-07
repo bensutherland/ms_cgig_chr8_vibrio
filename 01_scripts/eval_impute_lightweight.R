@@ -23,8 +23,8 @@ rm(current.path)
 # sessionInfo()
 
 # Set variables
-offspring_imputed_ai2.FN     <- "13_impute_compare/all_chr_combined.txt" # imputed
-offspring_10X_ai2.FN         <- "13_impute_compare/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_ai2.txt" # 10X genotypes
+offspring_imputed_ai2.FN     <- "13_impute_compare_no_novel_no_MERR/all_chr_combined.txt" # imputed
+offspring_10X_ai2.FN         <- "13_impute_compare_no_novel_no_MERR/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_ai2.txt" # 10X genotypes
 
 #### 01. Load data ####
 # Read in imputed data
@@ -145,9 +145,18 @@ for(c in 1:length(chr)){
   soi <- NULL ; score <- NULL
   for(i in 1:length(samples.vec)){
     
+    # Select the sample of interest
     soi <- samples.vec[i]
+    
+    # sum up the number of identical matches between the empirical and the imputed for this sample
     score <- sum(subset_data.df[, paste0(soi, "_empirical")] == subset_data.df[, paste0(soi, "_imputed")])
+    
+    # tally the number of missing values in either of the subsets (note: the imputed will always be no missing)
     num_missing <- sum(subset_data.df[, paste0(soi, "_empirical")]==9) + sum(subset_data.df[, paste0(soi, "_imputed")]==9)
+    #TODO: the logic of the above num_missing calc should be improved, as a simple sum of the two would not
+    #  technically work if there were actually 9s (missing vals) in the imputed
+    
+    # calculate the proportion correct for this sample by dividing the number correct by the total (with the number missing subtracted)
     prop_corr <- score / (nrow(subset_data.df) - num_missing)
     
     # Store results per sample
@@ -157,6 +166,7 @@ for(c in 1:length(chr)){
     result.df[i,"num.missing"] <- num_missing
     result.df[i,"prop.match"] <- prop_corr
     
+    # then repeat for all samples
     
   }
   
