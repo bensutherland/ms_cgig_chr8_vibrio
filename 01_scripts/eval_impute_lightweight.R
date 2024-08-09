@@ -23,8 +23,10 @@ rm(current.path)
 # sessionInfo()
 
 # Set variables
-offspring_imputed_ai2.FN     <- "13_impute_compare_no_novel_no_MERR/all_chr_combined.txt" # imputed
-offspring_10X_ai2.FN         <- "13_impute_compare_no_novel_no_MERR/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_ai2.txt" # 10X genotypes
+offspring_imputed_ai2.FN     <- "13_impute_compare/all_chr_combined.txt" # imputed
+offspring_10X_ai2.FN         <- "13_impute_compare/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_remove_subsampled_selected_loci_ai2.txt" # 10X genotypes
+
+subsampled <- TRUE
 
 #### 01. Load data ####
 # Read in imputed data
@@ -48,15 +50,28 @@ head(colnames(imputed.df), n = 20)
 imputed.df <- imputed.df[, grep(pattern = "mname|ASY2", x = colnames(imputed.df))] # remove parents, keep mname and ASY2 inds
 dim(imputed.df)
 
-# Remove 10X data (if present; this was used to support imputation in one evaluation)
-imputed.df <- imputed.df[, grep(pattern = "fastq.gz", x = colnames(imputed.df), invert = T)] # remove parents, keep mname and ASY2 inds
-dim(imputed.df)
+# # Remove 10X data (if present; this was used to support imputation in one evaluation)
+# imputed.df <- imputed.df[, grep(pattern = "fastq.gz", x = colnames(imputed.df), invert = T)] # remove parents, keep mname and ASY2 inds
+# dim(imputed.df)
 
 # Remove string '_ReAMP' from the end of sample names
 colnames(imputed.df) <- gsub(pattern = "_ReAMP", replacement = "", x = colnames(imputed.df))
 head(colnames(imputed.df))
 table(duplicated(colnames(imputed.df))) # any duplicates?
 
+# If working with subsampled data, rather than panel data
+if(subsampled == TRUE){
+  
+  # Remove everything after the first underscore
+  colnames.df <- gsub(pattern = "_.*", replacement = "", x = colnames(imputed.df))
+  colnames.df <- as.data.frame(colnames.df)
+  colnames.df <- colnames.df[2:nrow(colnames.df), ] # drop mname for now
+  colnames.df <- as.data.frame(colnames.df)
+  colnames.df <- separate(data = colnames.df, col = "colnames.df", into = c("assay", "fam", "rep", "ind", "noise"), sep = "-", remove = T)
+  colnames.df$name <- paste0(colnames.df$assay, "_", colnames.df$fam, "_", colnames.df$rep, "_", colnames.df$ind)
+  colnames(imputed.df) <- c("mname", colnames.df$name)
+  
+}
 
 ## Make sample names match for empirical data
 #colnames(empirical.df)
@@ -85,6 +100,15 @@ length(keep.cols)
 # Keep only the keep cols from imputed
 imputed.df <- imputed.df[, colnames(imputed.df) %in% keep.cols]
 dim(imputed.df)
+
+if(subsampled==TRUE){
+  
+  drop_cols <- c("ASY2_117_R2_7.1", "ASY2_117_R5_9.1")
+  
+  imputed.df <- imputed.df[, !(colnames(imputed.df) %in% drop_cols) ]
+  dim(imputed.df)
+  
+}
 
 # Keep only the keep cols from empirical
 empirical.df <- empirical.df[, colnames(empirical.df) %in% keep.cols]
@@ -138,15 +162,17 @@ for(c in 1:length(chr)){
   
   # Loop to evaluate concordance per sample
   # Set up an empty df to fill
-  result.df <- matrix(data = NA, nrow = length(samples.vec), ncol = 5)
+  result.df <- matrix(data = NA, nrow = length(samples.vec), ncol = 6)
   result.df <- as.data.frame(result.df)
-  colnames(result.df) <- c("sample", "num.loci", "num.match", "num.missing", "prop.match")
+  colnames(result.df) <- c("sample", "num.loci", "num.match", "num.missing", "prop.match", "pearson.cor")
   
-  soi <- NULL ; score <- NULL
+  soi <- NULL ; score <- NULL; calc.cor <- NULL; imputed_vector <- NULL; empirical_vector <- NULL
   for(i in 1:length(samples.vec)){
     
     # Select the sample of interest
     soi <- samples.vec[i]
+    
+    # NOTE: TODO: should convert "9" values to NAs here
     
     # sum up the number of identical matches between the empirical and the imputed for this sample
     score <- sum(subset_data.df[, paste0(soi, "_empirical")] == subset_data.df[, paste0(soi, "_imputed")])
@@ -157,14 +183,28 @@ for(c in 1:length(chr)){
     #  technically work if there were actually 9s (missing vals) in the imputed
     
     # calculate the proportion correct for this sample by dividing the number correct by the total (with the number missing subtracted)
-    prop_corr <- score / (nrow(subset_data.df) - num_missing)
+    prop_correct <- score / (nrow(subset_data.df) - num_missing)
     
+    # Calculate the pearson correlation between the two datatypes, only consider complete obs
+    imputed_vector   <- subset_data.df[, paste0(soi, "_imputed")]
+    empirical_vector <- subset_data.df[, paste0(soi, "_empirical")]
+    imputed_vector   <- gsub(pattern = "9", replacement = NA, x = imputed_vector)
+    empirical_vector <- gsub(pattern = "9", replacement = NA, x = empirical_vector)
+    
+    imputed_vector <- as.numeric(imputed_vector)
+    empirical_vector <- as.numeric(empirical_vector)
+    
+    calc.cor <-  cor(x = imputed_vector, y = empirical_vector
+                   , method = "pearson", use = "pairwise.complete.obs")
+            
     # Store results per sample
     result.df[i,"sample"] <- soi
     result.df[i,"num.loci"] <- nrow(subset_data.df)
     result.df[i,"num.match"] <- score
     result.df[i,"num.missing"] <- num_missing
-    result.df[i,"prop.match"] <- prop_corr
+    result.df[i,"prop.match"] <- prop_correct
+    result.df[i, "pearson.cor"] <- calc.cor
+    
     
     # then repeat for all samples
     
@@ -173,6 +213,7 @@ for(c in 1:length(chr)){
   # Summarize (printout)
   print(paste0("Mean ppn of typed loci concordant per sample: ", round(mean(result.df$prop.match, na.rm = T), digits = 3)))
   print(paste0("Mean number of typed loci concordant per sample: ", round(mean(result.df$num.match, na.rm = T), digits = 3)))
+  print(paste0("Mean Pearson correlation per sample: ", round(mean(result.df$pearson.cor, na.rm = T), digits = 3)))
   
   # Write out
   write.table(x = result.df, file = paste0("13_impute_compare/concord_eval_", chr[c], "_comparison.txt")
