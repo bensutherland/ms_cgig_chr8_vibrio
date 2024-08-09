@@ -23,8 +23,8 @@ rm(current.path)
 # sessionInfo()
 
 # Set variables
-per_chr.FN  <- "13_impute_compare_no_novel_no_MERR/concord_eval_NC_047559.1_comparison.txt"
-all_data.FN <- "13_impute_compare_no_novel_no_MERR/all_loci_data_comparison.txt" 
+#per_chr.FN  <- "13_impute_compare_no_novel_no_MERR/concord_eval_NC_047559.1_comparison.txt"
+all_data.FN <- "13_impute_compare/all_loci_data_comparison.txt" 
 
 #### 01. Load data ####
 # Read in per chr data
@@ -61,6 +61,22 @@ tail(colnames(all_data_subset.df))
 all_data_subset.df <- all_data_subset.df[with(all_data_subset.df, order(all_data_subset.df$pos, decreasing = F)), ]
 all_data_subset.df[1:5,1:5]
 dim(all_data_subset.df)
+
+
+### ASIDE, check correlation to be sure ####
+empirical.vector <- all_data_subset.df$ASY2_114_R1_1_empirical
+imputed.vector   <- all_data_subset.df$ASY2_114_R1_1_imputed
+
+empirical.vector <- gsub(pattern = "9", replacement = NA, x = empirical.vector)
+imputed.vector   <- gsub(pattern = "9", replacement = NA, x = imputed.vector)
+
+empirical.vector <- as.numeric(empirical.vector)
+imputed.vector   <- as.numeric(imputed.vector)
+
+length(empirical.vector)
+length(imputed.vector)
+
+cor(x = empirical.vector, y = imputed.vector, method = "pearson", use = "pairwise.complete.obs")
 
 # Remove missing data 
 all_data_subset_plot.df <- all_data_subset.df[all_data_subset.df$ASY2_114_R1_1_empirical!=9, c("ASY2_114_R1_1_empirical", "ASY2_114_R1_1_imputed")]
