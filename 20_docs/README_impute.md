@@ -52,8 +52,17 @@ bcftools merge --file-list 10_impute_input/parent_panel/sample_list.txt -Ov -o 1
 note: these have novel variants also, which will need to be removed eventually (below)    
 
 ##### Parent wgrs data #####
+If the parent and offspring wgrs data were all genotyped together, you will need to create a parent-only subset of the data, then index as follows:      
+
 ```
-bcftools index 10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf
+# Create a parent samplefile
+bcftools query -l 10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf | grep -vE '^ASY2' - > 10_impute_input/parent_wgrs/parent_samplelist.txt
+
+# Select only the parents from the dataset
+bcftools view -S 10_impute_input/parent_wgrs/parent_samplelist.txt 10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf -Ob -o 10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_parents_only.bcf
+
+# Index
+bcftools index 10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_parents_only.bcf 
 ```
 
 ### 02. Convert to chromosome assembly coordinates ###
@@ -198,14 +207,14 @@ bcftools view -T ^11_impute_combine/subsample_offspring_10x_common_loci_list.txt
 
 
 ### 03. Exclude panel loci from parent wgrs data ###
-Before we merge the panel and wgrs loci from the parents, we need to remove all panel loci (hotspot + novel) from the wgrs datafile to not have conflicting loci present.    
+Before we merge the panel and wgrs loci from the parents, we need to remove all panel loci (hotspot + novel, if present) from the wgrs datafile to not have conflicting loci present.    
 
 ```
 # prepare an output folder for bcftools isec
 mkdir 11_impute_combine/isec_rem_panel_from_wgrs/
 
 # run isec to identify loci private to wgrs data, incl. --collapse all flag to collapse regardless of alleles.    
-bcftools isec --collapse all ./10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1.bcf ./10_impute_input/parent_panel_roslin_rehead_hotspot_only.bcf -p 11_impute_combine/isec_rem_panel_from_wgrs/
+bcftools isec --collapse all ./10_impute_input/parent_wgrs/mpileup_calls_noindel5_miss0.1_SNP_q20_avgDP10_biallele_minDP4_maxDP100_miss0.1_parents_only.bcf ./10_impute_input/parent_panel_roslin_rehead_hotspot_only.bcf -p 11_impute_combine/isec_rem_panel_from_wgrs/
 
 ## Interpretation:    
 # 0000.vcf = private to parent wgrs
