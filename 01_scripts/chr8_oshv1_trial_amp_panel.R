@@ -45,6 +45,13 @@ indNames(obj.file2) <- gsub(pattern = "_ReAMP", replacement = "", x = indNames(o
 # Note: it appears that File 2 is the superior file, so we should just work with that file for now. 
 obj <- obj.file2
 
+# Aside, calculate MAF, without any filters applied
+maf_filt(data = obj, maf = 0.0001)
+
+write.table(x = myFreq, file = paste0("03_results/myFreq_", nLoc(obj_filt), "_loci.txt")
+            , quote = F, sep = "\t"
+            )
+
 generate_popmap(df = obj)
 # manually enter, then save out as *_annot.txt
 
