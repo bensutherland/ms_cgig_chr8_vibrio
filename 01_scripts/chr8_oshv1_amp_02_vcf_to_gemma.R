@@ -25,7 +25,8 @@ vcf.FN          <- "02_input_data/mpileup_calls_noindel5_miss0.2_SNP_q0_avgDP10_
 
 # Variables
 max_missing <- 0.3
-impute <- FALSE
+impute <- TRUE
+filter_by_GR <- FALSE # want to filter by GR? 
 
 # Phenotype variable
 pheno_of_interest <- "survival_state"
@@ -198,8 +199,20 @@ pca_from_genind(data = obj
 
 
 #### 08. Filter VCF based on above filters ####
-my_vcf <- my_vcf[, c("FORMAT", indNames(obj))]
-my_vcf
+if(filter_by_GR==TRUE){
+  
+  print("Filtering VCF file by per-sample genotyping rate")
+  my_vcf <- my_vcf[, c("FORMAT", indNames(obj))]
+  print(my_vcf)
+  
+}else{
+  
+  print("Not filtering VCF file by per-sample genotyping rate")
+  print("Removing inds from VCF file that did not have phenotypes")
+  my_vcf <- my_vcf[, c("FORMAT", pheno.df$indiv)]
+  print(my_vcf)
+  
+}
 
 # Filter to only keep specific loci
 # It is possible to filter based on the fix col, would need to populate the ID column via paste, then use similar to the following
@@ -239,40 +252,39 @@ mode(geno) = "numeric"
 geno[1:5,1:5]
 
 
-### NOT YET EDITED ###
-# # If imputing
-# if(impute==TRUE){
-#   
-#   #### Imputation ####
-#   # Create family-specific genotype matrices
-#   geno_F114 = geno[grep("_114_", rownames(geno)), ]
-#   dim(geno_F114)
-#   geno_F115 = geno[grep("_115_", rownames(geno)), ]
-#   dim(geno_F115)
-#   geno_F116 = geno[grep("_116_", rownames(geno)), ]
-#   dim(geno_F116)
-#   geno_F117 = geno[grep("_117_", rownames(geno)), ]
-#   dim(geno_F117)
-#   
-#   # Run family-specific mean imputation on genotypes
-#   geno_F114_impute <- impute_mean(geno_F114)
-#   geno_F115_impute <- impute_mean(geno_F115)
-#   geno_F116_impute <- impute_mean(geno_F116)
-#   geno_F117_impute <- impute_mean(geno_F117)
-#   
-#   
-#   # Reconstruct full genotype matrix
-#   geno_imputed <- rbind(  geno_F114_impute
-#                           , geno_F115_impute
-#                           , geno_F116_impute
-#                           , geno_F117_impute
-#   )
-#   
-#   # this is the genotypes file needed for gemma
-#   geno <- geno_imputed
-#   
-# }
-### /END/ NOT YET EDITED ###
+##### 09.b. Mean imputing (optional) #####
+if(impute==TRUE){
+
+  #### Imputation ####
+  # Create family-specific genotype matrices
+  geno_F114 = geno[grep("-114-", rownames(geno)), ]
+  dim(geno_F114)
+  geno_F115 = geno[grep("-115-", rownames(geno)), ]
+  dim(geno_F115)
+  geno_F116 = geno[grep("-116-", rownames(geno)), ]
+  dim(geno_F116)
+  geno_F117 = geno[grep("-117-", rownames(geno)), ]
+  dim(geno_F117)
+
+  # Run family-specific mean imputation on genotypes
+  geno_F114_impute <- impute_mean(geno_F114)
+  geno_F115_impute <- impute_mean(geno_F115)
+  geno_F116_impute <- impute_mean(geno_F116)
+  geno_F117_impute <- impute_mean(geno_F117)
+
+
+  # Reconstruct full genotype matrix
+  geno_imputed <- rbind(  geno_F114_impute
+                          , geno_F115_impute
+                          , geno_F116_impute
+                          , geno_F117_impute
+  )
+
+  # this is the genotypes file needed for gemma
+  geno <- geno_imputed
+
+}
+
 
 # Obtain vector of family identities
 head(rownames(geno))
@@ -298,7 +310,7 @@ head(indiv.df)
 # Checking
 setdiff(x = indiv.df$indiv, y = pheno.df$indiv) # if any inds are present without phenotypes, something has gone wrong in filters above, start over
 
-# Merge
+# Merge (sort = F is needed)
 indiv.df <- merge(x = indiv.df, y = pheno.df, by = "indiv", all.x = T, sort = F)
 # NOTE: if any NAs, this will not work
 
@@ -316,9 +328,7 @@ boxplot(pheno.df$DPE ~ as.factor(pheno.df$family), las = 1, ylab = "DPE"
         )
 #### /END/ TODO: MOVE ####
 
-## Retain phenotype for survival state
-dir.create(path = "03_results/gemma_inputs_survival_state")
-
+# Create pheno objects
 indiv.df$survival_state_gemma <- indiv.df$survival_state
 indiv.df$survival_state.gemma <- gsub(pattern = "S", replacement = "1", x = indiv.df$survival_state_gemma)
 indiv.df$survival_state.gemma <- gsub(pattern = "M", replacement = "0", x = indiv.df$survival_state.gemma)
@@ -329,7 +339,8 @@ pheno_survival_state
 
 ## Retain phenotype for DPE
 pheno_DPE <- as.numeric(indiv.df$DPE)
-  
+pheno_DPE  
+
 ## Prepare genotypes
 gwasgeno = t(geno) 
 gwasgeno[1:5,1:5] # preview
