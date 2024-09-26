@@ -4,7 +4,7 @@ Code repository to accompany all CHR8 analyses, which currently includes the fol
 - [2. ddRADseq of Vibrio challenge survivors (CHR8 families)](#02-ocv23-analysis)      
 - [3. rhAmp assay for CHR8 genotypes in Vibrio challenge survivors (CHR8 families)](#03-OCV23-rhAmp-analysis)     
 - [4. OA exposure of families from crosses at VIU (VIU families)](#04-OA-exposed-families)      
-- [5. Amplicon panel work for OsHV-1 trial](20_docs/README_impute.md)       
+- [5. Low-resolution GWAS with amplicon panel (OsHV-1 trial)](20_docs/README_LR_panel_GWAS.md)       
 
 #### Requirements ####
 [amplitools](https://github.com/bensutherland/amplitools)      
@@ -276,4 +276,7 @@ Next, use:
 - load gemma results and view distribution of p-values
 - generate Manhattan plot based on gemma output
 
+
+### 05. Low-resolution GWAS with amplicon panel (OsHV-1 trial) ###
+See appendix README: [Low-resolution GWAS with amplicon panel (OsHV-1 trial)](20_docs/README_LR_panel_GWAS.md)
 
