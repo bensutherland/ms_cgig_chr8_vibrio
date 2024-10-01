@@ -59,6 +59,8 @@ hist(gemma_gwas$p_wald, breaks = 20)
 plot.FN <- gsub(pattern = "03_results\\/", replacement = "", x = gemma_output.FN)
 plot.FN <- gsub(pattern = "\\/gwas_all_fam_covar.assoc.txt", replacement = "", x = plot.FN)
 
+dir.create(path = "03_results/GWAS_plots")
+
 pdf(file = paste0("03_results/GWAS_plots/Manhattan_", plot.FN, ".pdf"), width = 9, height = 5)
 par(mfrow = c(1,1), mar = c(5,4,4,2) +0.1, mgp = c(3,1,0))
 fastman(m = gemma_gwas, chr = "chr", bp = "pos.true", p = "p_wald"
