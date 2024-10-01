@@ -59,6 +59,13 @@ max(pheno.df$DPE, na.rm = T)
 pheno.df[pheno.df$survival_state=="S", "DPE"] <- 17
 head(pheno.df, n = 20)
 
+# Show mortality by family in retained samples
+pdf(file = "03_results/DPE_by_family.pdf", width = 7.5, height = 4.5)
+boxplot(pheno.df$DPE ~ as.factor(pheno.df$family), las = 1, ylab = "DPE"
+        , xlab = "Family"
+)
+dev.off()
+
 
 #### 02. Load genotypes ####
 # Load input VCF
@@ -320,13 +327,6 @@ geno[1:5,1:5]
 tail(indiv.df)
 table(paste0(indiv.df$family, "__", indiv.df$survival_state))
 
-
-#### TODO: MOVE UP and SAVE OUT####
-# Show mortality by family in retained samples
-boxplot(pheno.df$DPE ~ as.factor(pheno.df$family), las = 1, ylab = "DPE"
-        , xlab = "Family"
-        )
-#### /END/ TODO: MOVE ####
 
 # Create pheno objects
 indiv.df$survival_state_gemma <- indiv.df$survival_state
