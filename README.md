@@ -148,17 +148,15 @@ Use GEMMA to run a GWAS using these files:
 gemma -g gwasgeno.txt -p gwaspheno.txt -gk -maf 0.05 -o gwas_allfam_pheno_dead_alive
 
 # Run the GWAS analysis with the family covariate and binary phenotype
-gemma -g gwasgeno.txt -p gwaspheno.txt -k output/gwas_allfam_pheno_dead_alive.cXX.txt  -n 1 -c gwascovar.txt -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_allfam_covar
+gemma -g gwasgeno.txt -p gwaspheno.txt -k output/gwas_allfam_pheno_dead_alive.cXX.txt  -n 1 -c gwascovar.txt -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_allfam_covar_dead_alive
 
 # Run the GWAS analysis with the family covariate and numeric day-to-death phenotype
 # Calculate kinship matrix
 gemma -g gwasgeno.txt -p gwaspheno2.txt -gk -maf 0.05 -o gwas_allfam_pheno_day_to_death
 
 # Run the GWAS analysis with the family covariate and day-to-death phenotype
-gemma -g gwasgeno.txt -p gwaspheno2.txt -k output/gwas_allfam_  -n 1 -c gwascovar.txt -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_allfam_covar
+gemma -g gwasgeno.txt -p gwaspheno2.txt -k output/gwas_allfam_pheno_day_to_death.cXX.txt -n 1 -c gwascovar.txt -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_allfam_covar_pheno_day_to_death
 
-
-#./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -k output/gwas_allfam.cXX.txt -n 1 -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_allfam_nocovar
 ```
 
 
