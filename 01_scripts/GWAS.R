@@ -2,12 +2,25 @@
 # K. Divilov, edits by B. Sutherland, L. Surry
 # initialized 2023-12-29
 
+#### 00. Front Matter ####
+# Clear space
+# rm(list=ls())
+
+## Install packages
+# install.packages("vcfR")
+# install.packages("fastman")
+# install.packages("missMethods")
+# install.packages("rstudioapi")
+# install.packages("tidyr")
+# install.packages("norm")
+
 # Load libraries
 library(vcfR)
 library(fastman)
 library(missMethods)
 library(rstudioapi)
 library(tidyr)
+library(norm)
 
 # Set working directory to the ms_scallop_popgen repo
 current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
@@ -20,7 +33,10 @@ VCF.FN <- "02_input_data/populations.snps_single-SNP_per_tag_2023-10-23.vcf"
 map.FN <- "02_input_data/populations.plink_2023-10-23.map"
 interp.FN <- "02_input_data/sample_interp_2024-07-18.csv"
 
+impute_type <- "EM" # either "mean" or "EM" (i.e., expectation-maximization)
 
+
+#### 01. Read in data ####
 # Read in genotype data
 vcf = read.vcfR(file = VCF.FN)
 vcf
@@ -31,7 +47,7 @@ map = read.table(file = map.FN, header = F)
 head(map)
 
 
-
+#### 02. Prepare marker names and CHR info ####
 # Add linkage group (LG) info to map file, based on https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_902806645.1/
 map$LG = NA
 map$LG[map$V1=="NC_047559.1"] = 1
@@ -64,6 +80,8 @@ head(map)
 map$SNPname = paste(map$Chr, map$V4, sep="_")
 head(map)
 
+
+#### 03. Prepare genotypes ####
 # Extract genotypes from vcf
 geno = extract.gt(vcf, element = "GT")
 geno[1:5, 1:20]
@@ -79,7 +97,6 @@ dim(geno)
 # missingness sanity check
 plot(rowSums(is.na(geno))/ncol(geno)) # missing data by locus
 plot(colSums(is.na(geno))/nrow(geno)) # missing data by sample
-
 
 # Change genotypes to numeric values
 geno[1:5, 1:5]
@@ -104,12 +121,31 @@ geno_F116 = geno[grep("F116",rownames(geno)),]
 geno_F117 = geno[grep("F117",rownames(geno)),]
 geno_OFR6.10 = geno[grep("OFR6.10",rownames(geno)),]
 
-# Run family-specific mean imputation on genotypes
-geno_F114_impute = impute_mean(geno_F114)
-geno_F115_impute = impute_mean(geno_F115)
-geno_F116_impute = impute_mean(geno_F116)
-geno_F117_impute = impute_mean(geno_F117)
-geno_OFR6.10_impute = impute_mean(geno_OFR6.10)
+# Family-specific imputation
+if(impute_type == "mean"){
+  
+  print("Using imputation type 'mean'")
+  
+  # Run family-specific mean imputation on genotypes
+  geno_F114_impute = impute_mean(geno_F114)
+  geno_F115_impute = impute_mean(geno_F115)
+  geno_F116_impute = impute_mean(geno_F116)
+  geno_F117_impute = impute_mean(geno_F117)
+  geno_OFR6.10_impute = impute_mean(geno_OFR6.10)
+  
+}else if(impute_type == "EM"){
+  
+  print("Using imputation type 'EM'")
+  
+  # Run family-specific EM imputation on genotypes
+  geno_F114_impute = impute_EM(geno_F114)
+  geno_F115_impute = impute_EM(geno_F115)
+  geno_F116_impute = impute_EM(geno_F116)
+  geno_F117_impute = impute_EM(geno_F117)
+  geno_OFR6.10_impute = impute_EM(geno_OFR6.10)
+  
+}
+
 
 # Reconstruct full genotype matrix
 geno = rbind(geno_F114_impute,
@@ -119,6 +155,7 @@ geno = rbind(geno_F114_impute,
              geno_OFR6.10_impute)
 
 
+#### 04. Prepare GEMMA inputs ####
 #create variable holding family information
 var_family = rep(NA,nrow(geno))
 var_family[grep("F114",rownames(geno))] = "F114"
@@ -187,6 +224,7 @@ write.table(gwasgeno, "03_results/gwasgeno.txt",row.names = F,col.names = F,quot
 gwaspheno2 <- as.numeric(gsub(pattern = "D", replacement = "", x = all.df$day.sampled))
 write.table(gwaspheno2, "03_results/gwaspheno2.txt",row.names = F, col.names = F)
 
+#### 05. Instructions for GEMMA (run in terminal) ####
 #Run in command-line
 #gemma-0.98.5 available at https://github.com/genetics-statistics/GEMMA
 #./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -gk -maf 0.05 -o gwas_allfam
