@@ -33,7 +33,7 @@ VCF.FN <- "02_input_data/populations.snps_single-SNP_per_tag_2023-10-23.vcf"
 map.FN <- "02_input_data/populations.plink_2023-10-23.map"
 interp.FN <- "02_input_data/sample_interp_2024-07-18.csv"
 
-impute_type <- "EM" # either "mean" or "EM" (i.e., expectation-maximization)
+impute_type <- "mean" # either "mean" or "EM" (i.e., expectation-maximization)
 
 
 #### 01. Read in data ####
@@ -224,123 +224,16 @@ write.table(gwasgeno, "03_results/gwasgeno.txt",row.names = F,col.names = F,quot
 gwaspheno2 <- as.numeric(gsub(pattern = "D", replacement = "", x = all.df$day.sampled))
 write.table(gwaspheno2, "03_results/gwaspheno2.txt",row.names = F, col.names = F)
 
+
 #### 05. Instructions for GEMMA (run in terminal) ####
-##Run in command-line
-# cd 03_results
-##gemma-0.98.5 available at https://github.com/genetics-statistics/GEMMA
-# ./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -gk -maf 0.05 -o gwas_allfam
-# ./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -k output/gwas_allfam.cXX.txt -n 1 -c gwascovar.txt -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_allfam_covar
-# ./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -k output/gwas_allfam.cXX.txt -n 1 -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_allfam_nocovar
-
-## Jump to plotting section #
-
-
-#### Unused variations (subsets) of GWAS ####
-# #GWAS with only MBP families
-# gwaspheno = var_status[-which(var_family=="OFR6.10")]
-# gwascovar = model.matrix(~as.factor(var_family[-which(var_family=="OFR6.10")]))
-# gwasgeno = t(geno[-which(var_family=="OFR6.10"),])
-# gwasgeno = cbind(rownames(gwasgeno),"X","Y",gwasgeno)
-# gwasanno = cbind(rownames(gwasgeno),
-#                  sapply(strsplit(rownames(gwasgeno),"_"), `[`, 2),
-#                  sapply(strsplit(sapply(strsplit(rownames(gwasgeno),"_"), `[`, 1),"Chr"), `[`, 2),
-#                  0)
-# 
-# write.table(gwaspheno,"gwaspheno.txt",row.names = F,col.names = F)
-# write.table(gwascovar,"gwascovar.txt",row.names = F,col.names = F)
-# write.table(gwasanno,"gwasanno.txt",row.names = F,col.names = F,quote = F)
-# write.table(gwasgeno,"gwasgeno.txt",row.names = F,col.names = F,quote = F)
-
-
-#./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -gk -maf 0.05 -o gwas_mbpfam
-#./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -k output/gwas_mbpfam.cXX.txt -n 1 -c gwascovar.txt -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_mbpfam_covar
-#./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -k output/gwas_mbpfam.cXX.txt -n 1 -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_mbpfam_nocovar
-
-
-# #GWAS with only F114
-# gwaspheno = var_status[which(var_family=="F114")]
-# gwasgeno = t(geno[which(var_family=="F114"),])
-# gwasgeno = cbind(rownames(gwasgeno),"X","Y",gwasgeno)
-# gwasanno = cbind(rownames(gwasgeno),
-#                  sapply(strsplit(rownames(gwasgeno),"_"), `[`, 2),
-#                  sapply(strsplit(sapply(strsplit(rownames(gwasgeno),"_"), `[`, 1),"Chr"), `[`, 2),
-#                  0)
-# 
-# write.table(gwaspheno,"gwaspheno.txt",row.names = F,col.names = F)
-# write.table(gwasanno,"gwasanno.txt",row.names = F,col.names = F,quote = F)
-# write.table(gwasgeno,"gwasgeno.txt",row.names = F,col.names = F,quote = F)
-# 
-# #./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -n 1 -a gwasanno.txt -maf 0.05 -lm 2 -o gwas_F114
-# 
-# #GWAS with only F115
-# gwaspheno = var_status[which(var_family=="F115")]
-# gwasgeno = t(geno[which(var_family=="F115"),])
-# gwasgeno = cbind(rownames(gwasgeno),"X","Y",gwasgeno)
-# gwasanno = cbind(rownames(gwasgeno),
-#                  sapply(strsplit(rownames(gwasgeno),"_"), `[`, 2),
-#                  sapply(strsplit(sapply(strsplit(rownames(gwasgeno),"_"), `[`, 1),"Chr"), `[`, 2),
-#                  0)
-# 
-# write.table(gwaspheno,"gwaspheno.txt",row.names = F,col.names = F)
-# write.table(gwasanno,"gwasanno.txt",row.names = F,col.names = F,quote = F)
-# write.table(gwasgeno,"gwasgeno.txt",row.names = F,col.names = F,quote = F)
-# 
-# #./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -n 1 -a gwasanno.txt -maf 0.05 -lm 2 -o gwas_F115
-# 
-# #GWAS with only F116
-# gwaspheno = var_status[which(var_family=="F116")]
-# gwasgeno = t(geno[which(var_family=="F116"),])
-# gwasgeno = cbind(rownames(gwasgeno),"X","Y",gwasgeno)
-# gwasanno = cbind(rownames(gwasgeno),
-#                  sapply(strsplit(rownames(gwasgeno),"_"), `[`, 2),
-#                  sapply(strsplit(sapply(strsplit(rownames(gwasgeno),"_"), `[`, 1),"Chr"), `[`, 2),
-#                  0)
-# 
-# write.table(gwaspheno,"gwaspheno.txt",row.names = F,col.names = F)
-# write.table(gwasanno,"gwasanno.txt",row.names = F,col.names = F,quote = F)
-# write.table(gwasgeno,"gwasgeno.txt",row.names = F,col.names = F,quote = F)
-# 
-# #./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -n 1 -a gwasanno.txt -maf 0.05 -lm 2 -o gwas_F116
-# 
-# #GWAS with only F117
-# gwaspheno = var_status[which(var_family=="F117")]
-# gwasgeno = t(geno[which(var_family=="F117"),])
-# gwasgeno = cbind(rownames(gwasgeno),"X","Y",gwasgeno)
-# gwasanno = cbind(rownames(gwasgeno),
-#                  sapply(strsplit(rownames(gwasgeno),"_"), `[`, 2),
-#                  sapply(strsplit(sapply(strsplit(rownames(gwasgeno),"_"), `[`, 1),"Chr"), `[`, 2),
-#                  0)
-# 
-# write.table(gwaspheno,"gwaspheno.txt",row.names = F,col.names = F)
-# write.table(gwasanno,"gwasanno.txt",row.names = F,col.names = F,quote = F)
-# write.table(gwasgeno,"gwasgeno.txt",row.names = F,col.names = F,quote = F)
-# 
-# #./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -n 1 -a gwasanno.txt -maf 0.05 -lm 2 -o gwas_F117
-# 
-# #GWAS with only OFR6.10
-# gwaspheno = var_status[which(var_family=="OFR6.10")]
-# gwasgeno = t(geno[which(var_family=="OFR6.10"),])
-# gwasgeno = cbind(rownames(gwasgeno),"X","Y",gwasgeno)
-# gwasanno = cbind(rownames(gwasgeno),
-#                  sapply(strsplit(rownames(gwasgeno),"_"), `[`, 2),
-#                  sapply(strsplit(sapply(strsplit(rownames(gwasgeno),"_"), `[`, 1),"Chr"), `[`, 2),
-#                  0)
-# 
-# write.table(gwaspheno,"gwaspheno.txt",row.names = F,col.names = F)
-# write.table(gwasanno,"gwasanno.txt",row.names = F,col.names = F,quote = F)
-# write.table(gwasgeno,"gwasgeno.txt",row.names = F,col.names = F,quote = F)
-# 
-# #./gemma-0.98.5 -g gwasgeno.txt -p gwaspheno.txt -n 1 -a gwasanno.txt -maf 0.05 -lm 2 -o gwas_OFR6.10
+# Run in command-line
+# See instructions in README 
+# Once completed in command line, go to next section
 
 
 #### 06. Plot GEMMA output ####
-# All family, with covariate
-# gemma_gwas2 = read.table("03_results/output/gwas_allfam_covar.assoc.txt")
-# gemma_gwas = read.table("03_results/output/gwas_allfam_covar.assoc.txt", skip = 1)
-# names(gemma_gwas) = gemma_gwas2[1,]
-
 # Binary phenotype
-gemma_output <- read.table(file = "03_results/output/gwas_allfam_covar.assoc.txt", header = T)
+gemma_output <- read.table(file = "03_results/output/gwas_allfam_covar_dead_alive.assoc.txt", header = T)
 gemma_gwas   <- gemma_output
 head(gemma_gwas)
 
@@ -378,136 +271,5 @@ fastman(gemma_gwas,
         #main= paste0("All families with fixed covariate, days-to-death pheno (n = ", nind, ")")
 )
 dev.off()
-
-
-
-
-
-
-#### Unused plotting ####
-# gemma_gwas2 = read.table("output/gwas_allfam_nocovar.assoc.txt")
-# gemma_gwas = read.table("output/gwas_allfam_nocovar.assoc.txt",skip = 1)
-# names(gemma_gwas) = gemma_gwas2[1,]
-# 
-# fastman(gemma_gwas,
-#         chr = "chr",
-#         bp = "ps",
-#         p="p_lrt",
-#         genomewideline = -log10(0.05/nrow(gemma_gwas)),
-#         suggestiveline = NULL,
-#         cex=1.5,cex.lab=1.5,cex.axis=1,
-#         ylim=c(0,6),
-#         main="All familes + no covariable (n=165)")
-# 
-# 
-# gemma_gwas2 = read.table("output/gwas_mbpfam_covar.assoc.txt")
-# gemma_gwas = read.table("output/gwas_mbpfam_covar.assoc.txt",skip = 1)
-# names(gemma_gwas) = gemma_gwas2[1,]
-# 
-# fastman(gemma_gwas,
-#         chr = "chr",
-#         bp = "ps",
-#         p="p_lrt",
-#         genomewideline = -log10(0.05/nrow(gemma_gwas)),
-#         suggestiveline = NULL,
-#         cex=1.5,cex.lab=1.5,cex.axis=1,
-#         ylim=c(0,6),
-#         main="MBP familes + fixed covariable (n=139)")
-# 
-# 
-# 
-# gemma_gwas2 = read.table("output/gwas_mbpfam_nocovar.assoc.txt")
-# gemma_gwas = read.table("output/gwas_mbpfam_nocovar.assoc.txt",skip = 1)
-# names(gemma_gwas) = gemma_gwas2[1,]
-# 
-# fastman(gemma_gwas,
-#         chr = "chr",
-#         bp = "ps",
-#         p="p_lrt",
-#         genomewideline = -log10(0.05/nrow(gemma_gwas)),
-#         suggestiveline = NULL,
-#         cex=1.5,cex.lab=1.5,cex.axis=1,
-#         ylim=c(0,6),
-#         main="MBP familes + no covariable (n=139)")
-# 
-# 
-# 
-# gemma_gwas2 = read.table("output/gwas_F114.assoc.txt")
-# gemma_gwas = read.table("output/gwas_F114.assoc.txt",skip = 1)
-# names(gemma_gwas) = gemma_gwas2[1,]
-# 
-# fastman(gemma_gwas,
-#         chr = "chr",
-#         bp = "ps",
-#         p="p_lrt",
-#         genomewideline = -log10(0.05/nrow(gemma_gwas)),
-#         suggestiveline = NULL,
-#         cex=1.5,cex.lab=1.5,cex.axis=1,
-#         ylim=c(0,6),
-#         main="F114 (n=32)")
-# 
-# 
-# 
-# gemma_gwas2 = read.table("output/gwas_F115.assoc.txt")
-# gemma_gwas = read.table("output/gwas_F115.assoc.txt",skip = 1)
-# names(gemma_gwas) = gemma_gwas2[1,]
-# 
-# fastman(gemma_gwas,
-#         chr = "chr",
-#         bp = "ps",
-#         p="p_lrt",
-#         genomewideline = -log10(0.05/nrow(gemma_gwas)),
-#         suggestiveline = NULL,
-#         cex=1.5,cex.lab=1.5,cex.axis=1,
-#         ylim=c(0,6),
-#         main="F115 (n=37)")
-# 
-# 
-# gemma_gwas2 = read.table("output/gwas_F116.assoc.txt")
-# gemma_gwas = read.table("output/gwas_F116.assoc.txt",skip = 1)
-# names(gemma_gwas) = gemma_gwas2[1,]
-# 
-# fastman(gemma_gwas,
-#         chr = "chr",
-#         bp = "ps",
-#         p="p_lrt",
-#         genomewideline = -log10(0.05/nrow(gemma_gwas)),
-#         suggestiveline = NULL,
-#         cex=1.5,cex.lab=1.5,cex.axis=1,
-#         ylim=c(0,6),
-#         main="F116 (n=36)")
-# 
-# 
-# 
-# gemma_gwas2 = read.table("output/gwas_F117.assoc.txt")
-# gemma_gwas = read.table("output/gwas_F117.assoc.txt",skip = 1)
-# names(gemma_gwas) = gemma_gwas2[1,]
-# 
-# fastman(gemma_gwas,
-#         chr = "chr",
-#         bp = "ps",
-#         p="p_lrt",
-#         genomewideline = -log10(0.05/nrow(gemma_gwas)),
-#         suggestiveline = NULL,
-#         cex=1.5,cex.lab=1.5,cex.axis=1,
-#         ylim=c(0,6),
-#         main="F117 (n=34)")
-# 
-# 
-# 
-# gemma_gwas2 = read.table("output/gwas_OFR6.10.assoc.txt")
-# gemma_gwas = read.table("output/gwas_OFR6.10.assoc.txt",skip = 1)
-# names(gemma_gwas) = gemma_gwas2[1,]
-# 
-# fastman(gemma_gwas,
-#         chr = "chr",
-#         bp = "ps",
-#         p="p_lrt",
-#         genomewideline = -log10(0.05/nrow(gemma_gwas)),
-#         suggestiveline = NULL,
-#         cex=1.5,cex.lab=1.5,cex.axis=1,
-#         ylim=c(0,6),
-#         main="OFR6.10 (n=26)")
-
 
 
