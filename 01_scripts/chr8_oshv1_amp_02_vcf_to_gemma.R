@@ -1,7 +1,9 @@
-# Read in de novo genotyped amp panel VCF, characterize, then prepare GWAS gemma files
+# Read in amp panel VCF (de novo or TVC), characterize, then prepare GWAS gemma files
 #  requires amplitools-based BCF file, renamed by impute_workflow, and phenotype file (in 00_archive)
 #   convert to VCF file, and put in 02_input_data (see filenames in 'User set variables' below)
+#  or requires TVC-based VCF file (see filename in 'User set variables' below)
 #  note: all code and directories listed are within the simple_pop_stats repository
+#  note: all output will go into simple_pop_stats/03_results
 #  initialized 2024-06-14
 #  Ben J. G. Sutherland (VIU), incl. code dev by Konstantin Divilov
 
@@ -10,7 +12,7 @@
 # Clear space
 # rm(list=ls())
 
-# Source simple_pop_stats ( https://github.com/bensutherland/simple_pop_stats )
+# Source simple_pop_stats_start.R ( https://github.com/bensutherland/simple_pop_stats )
 
 # Load additional libraries to those loaded in simple_pop_stats
 #devtools::install_github('kaustubhad/fastman',build_vignettes = TRUE)
@@ -20,13 +22,14 @@ library(missMethods)
 
 ## User set variables
 # Filenames
-phenos.FN       <- "00_archive/G0923-21-VIUN_SampleInventory_V2_recd_2024-08-16.txt"
-vcf.FN          <- "02_input_data/mpileup_calls_noindel5_miss0.2_SNP_q0_avgDP10_biallele_minDP4_maxDP100000_miss0.2_offspring_only_rename.vcf"
+phenos.FN  <- "00_archive/G0923-21-VIUN_SampleInventory_V2_recd_2024-08-16.txt"
+#vcf.FN     <- "02_input_data/mpileup_calls_noindel5_miss0.2_SNP_q0_avgDP10_biallele_minDP4_maxDP100000_miss0.2_offspring_only_rename.vcf"
+vcf.FN     <- "02_input_data/all_sample_renamed_snplift_rehead_hotspot.vcf"
 
 # Variables
 max_missing <- 0.3
-impute <- TRUE
-filter_by_GR <- FALSE # want to filter by GR? 
+impute <- FALSE
+filter_by_GR <- TRUE # want to filter by GR? 
 
 # Phenotype variable
 pheno_of_interest <- "survival_state"
@@ -187,6 +190,7 @@ nLoc(obj) - length(keep)
 
 # Retain only those loci above the cutoff
 obj <- obj[, loc=keep]
+obj
 
 
 #### 06. Drop monomorphic loci ####
