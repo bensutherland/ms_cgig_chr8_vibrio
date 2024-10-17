@@ -134,6 +134,7 @@ final_fig <- ggarrange(F114.plot, F115.plot, F116.plot, F117.plot
                 , ncol = 2, nrow = 2)
 
 pdf(file = "03_results/boxplot_days_to_death_by_num_alt_alleles.pdf", width = 8, height = 5.5)
+tiff(file = "03_results/boxplot_days_to_death_by_num_alt_alleles.tiff", width = 8, height = 5.5, units = "in", res = 300)
 print(final_fig)
 dev.off()
 
