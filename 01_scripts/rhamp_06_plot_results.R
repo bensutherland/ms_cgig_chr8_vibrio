@@ -237,6 +237,7 @@ final_bar <- ggarrange(plotlist = plot_list, labels = c("A", "B", "C", "D"), nco
 
 #Save as PDF
 pdf(file = "03_results/barplot_#individuals_mortality_by_num_alt_alleles.pdf", width = 8, height = 5.5)
+tiff(file = "03_results/barplot_#individuals_mortality_by_num_alt_alleles.tiff", width = 8, height = 5.5, units = "in", res = 300)
 print(final_bar)
 dev.off()
 print(final_bar)
@@ -267,6 +268,7 @@ geno.prop
 
 #Save as PDF
 pdf(file = "03_results/proportion_genotype_mapping_family.pdf", width = 8, height = 5.5)
+tiff(file = "03_results/proportion_genotype_mapping_family.tiff", width = 8, height = 5.5, units = "in", res = 300)
 print(geno.prop)
 dev.off()
 
@@ -297,6 +299,7 @@ mort_bar <- ggplot(mort_long, aes(x = family, y = percent, fill = status)) + geo
 
 #Save as PDF
 pdf(file = "03_results/barplot_prop_individuals_mortality_per_family.pdf", width = 8, height = 5.5)
+tiff(file = "03_results/barplot_prop_individuals_mortality_per_family.tiff", width = 8, height = 5.5, units = "in", res = 300)
 print(mort_bar)
 dev.off()
 print(mort_bar)
@@ -343,6 +346,8 @@ mort_bar_family_genotype <- ggplot(mort_proportions_and_family_crosses, aes(x = 
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), legend.position = "none") + facet_grid(~ parental_cross, scales = "free_x", space = "free_x")
 
 pdf(file = "03_results/barplot_prop_individuals_mort_parental_cross_x_families.pdf", width = 8, height = 5.5)
+tiff(file = "03_results/barplot_prop_individuals_mort_parental_cross_x_families.tiff", width = 8, height = 5.5, units = "in", res = 300)
+
 print(mort_bar_family_genotype)
 dev.off()
 print(mort_bar_family_genotype)
@@ -356,6 +361,7 @@ average_morts_parental_crosses_no_fam_barplot <- ggplot(average_mortality, aes(x
   theme_classic() +theme(legend.position = "none") + scale_fill_manual(values = cbbPalette)
 
 pdf(file = "03_results/average_morts_parental_crosses_no_fam_barplot.pdf", width = 8, height = 5.5)
+tiff(file = "03_results/average_morts_parental_crosses_no_fam_barplot.tiff", width = 8, height = 5.5, units = "in", res = 300)
 print(average_morts_parental_crosses_no_fam_barplot)
 dev.off()
 print(average_morts_parental_crosses_no_fam_barplot)
