@@ -182,10 +182,11 @@ head(missing_data_loci.df)
 
 ##### 05.b. Plot missing data #####
 pdf(file = "03_results/geno_rate_by_marker.pdf", width = 9, height = 5)
-hist(missing_data_loci.df$perc.missing, breaks = 20
+hist((missing_data_loci.df$perc.missing * 100), breaks = 20
      , las = 1
      , xlab = "Per locus missing (%)"
      , main = ""
+     , xlim = c(0,100)
      )
 dev.off()
 
@@ -217,6 +218,55 @@ pca_from_genind(data = obj
                 , retain_pca_obj = T
                 )
 # Results are saved out to PDF file
+
+# Improving PCA plotting based on Sutherland et al. 2023 (G3) code
+# source of code: https://github.com/bensutherland/ms_scallop_popgen/blob/main/01_scripts/03_sps_analysis.R
+## Prepare an eigenvalue plot for inset
+num_eigenvals <- 10
+vals.df <- as.data.frame(pca.obj$eig[1:num_eigenvals])
+colnames(vals.df)[1] <- "vals"
+vals.df$pc <- seq(1:num_eigenvals)
+vals.df
+colnames(vals.df) <- c("PVE", "PC")
+
+# Express eigenvalues as a percentage of total variation explained
+tot.var <- sum(pca.obj$eig)
+vals.df$PVE <- vals.df$PVE/tot.var *100
+
+# Barplot
+eig.plot <- ggplot(data = vals.df, aes(x=PC, y=PVE)) + 
+  geom_bar(stat = "identity") + 
+  theme(axis.text.x=element_blank() #remove x axis labels
+        , axis.ticks.x=element_blank() #remove x axis ticks
+        , panel.background = element_blank()
+  )
+
+
+## Plot
+# Retain original, rename
+pc1_v_pc2_annot.plot <- pc1_v_pc2.plot
+
+# Remove legend pc1 v pc2
+pc1_v_pc2_annot.plot  <- pc1_v_pc2_annot.plot + theme(legend.position = "none")
+pc1_v_pc2_annot.plot  <- pc1_v_pc2_annot.plot + annotation_custom(ggplotGrob(eig.plot)
+                                                      , xmin = -9, xmax = -6
+                                                      , ymin = -7, ymax = -1
+)
+
+# Legend inside panel second plot
+pc3_v_pc4_annot.plot <- pc3_v_pc4.plot 
+# + theme(legend.justification = c(1,0), legend.position.inside = c(1,0)
+#                                          , legend.background = element_rect(colour = "black", fill = "white", linetype = "solid")
+# )
+
+final.figure <- ggarrange(pc1_v_pc2_annot.plot, pc3_v_pc4_annot.plot
+                          , labels = c("A", "B")
+                          , ncol = 1, nrow = 2
+)
+
+pdf(file = "03_results/pca_composite_figure.pdf", width = 8.5, height = 7.5)
+print(final.figure)
+dev.off()
 
 
 #### 08. Filter VCF based on above filters ####
