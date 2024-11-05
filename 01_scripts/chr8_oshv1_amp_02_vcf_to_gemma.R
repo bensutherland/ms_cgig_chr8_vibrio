@@ -23,8 +23,8 @@ library(missMethods)
 ## User set variables
 # Filenames
 phenos.FN  <- "00_archive/G0923-21-VIUN_SampleInventory_V2_recd_2024-08-16.txt"
-#vcf.FN     <- "02_input_data/mpileup_calls_noindel5_miss0.2_SNP_q0_avgDP10_biallele_minDP4_maxDP100000_miss0.2_offspring_only_rename.vcf"
-vcf.FN     <- "02_input_data/all_sample_renamed_snplift_rehead_hotspot.vcf"
+vcf.FN     <- "02_input_data/mpileup_calls_noindel5_miss0.2_SNP_q0_avgDP10_biallele_minDP4_maxDP100000_miss0.2_offspring_only_rename.vcf" # de novo calls
+#vcf.FN     <- "02_input_data/all_sample_renamed_snplift_rehead_hotspot.vcf" # hotspot calls
 
 # Variables
 max_missing <- 0.3
@@ -67,6 +67,16 @@ pdf(file = "03_results/DPE_by_family.pdf", width = 7.5, height = 4.5)
 boxplot(pheno.df$DPE ~ as.factor(pheno.df$family), las = 1, ylab = "DPE"
         , xlab = "Family"
 )
+dev.off()
+
+violin_plot <- ggplot(pheno.df, aes(x = family, y = DPE)) + 
+                  geom_violin(fill = "grey") +
+                  geom_jitter(height = 0.1, width = 0.2, alpha = 0.5, size = 2) +
+                  theme_classic()
+
+
+pdf(file = "03_results/DPE_by_family_violin.pdf", width = 7.5, height = 4.5)
+print(violin_plot)
 dev.off()
 
 
