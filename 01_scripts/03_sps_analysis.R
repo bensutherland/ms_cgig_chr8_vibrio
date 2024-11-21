@@ -1,4 +1,4 @@
-# simple_pop_stats analysis component of the Yesso scallop RADseq analysis
+# simple_pop_stats analysis component of the OCV23 RADseq analysis
 # B. Sutherland
 # Initialized 2023-10-23
 # Requires first running "ms_cgig_chr8/01_scripts/02_sps_char_and_filt.R"
@@ -74,14 +74,5 @@ final.figure <- ggarrange(pc1_v_pc2.plot, pc3_v_pc4.plot
 pdf(file = "03_results/pca_composite_figure_w_close_kin.pdf", width = 12, height = 6.5)
 print(final.figure)
 dev.off()
-
-
-# STILL TO DO: 
-# Make separate populations as separate datasets
-# FST comparison between dead/alive
-# Plot in Manhattan plot
-# Possibly statistic test for p-value
-
-
 
 # single SNP per locus analysis is complete
