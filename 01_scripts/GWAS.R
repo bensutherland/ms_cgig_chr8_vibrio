@@ -29,24 +29,15 @@ setwd(current.path)
 rm(current.path)
 
 # User-set variables
-#VCF.FN <- "02_input_data/populations.snps_single-SNP_per_tag_2023-10-23.vcf" # main analysis
+#VCF.FN <- "02_input_data/populations.snps_single-SNP_per_tag_2023-10-23.vcf" # standard analysis
 VCF.FN <- "02_input_data/populations.snps.imputed.vcf.gz" # imputed analysis (linkImputeR, 2024-10-25)
-#map.FN <- "02_input_data/populations.plink_2023-10-23.map"
-map.FN <- "02_input_data/populations.plink.map" # from figshare
 interp.FN <- "02_input_data/sample_interp_2024-07-18.csv"
-
-#impute_type <- "mean" # either "mean" or "EM" (i.e., expectation-maximization)
 
 
 #### 01. Read in data ####
 # Read in genotype data
 vcf <- read.vcfR(file = VCF.FN)
 vcf
-
-# Read in map data
-# map = read.table(file = map.FN, header = F)
-# #colnames(map) <- c("scaffold", "mname", "unkn", "pos")
-# head(map)
 
 
 #### 02. Prepare marker names and CHR info ####
@@ -138,6 +129,10 @@ mode(geno) = "numeric"
 geno = geno[-grep("F0",rownames(geno)),]
 dim(geno)
 
+# Remove VIU samples
+geno = geno[-grep("OFR6",rownames(geno)),]
+dim(geno)
+
 # # Create family-specific genotype matrices
 # geno_F114 = geno[grep("F114",rownames(geno)),]
 # geno_F115 = geno[grep("F115",rownames(geno)),]
@@ -186,7 +181,7 @@ var_family[grep(pattern = "F114", x = rownames(geno))] <- "F114"
 var_family[grep(pattern = "F115", x = rownames(geno))] <- "F115"
 var_family[grep(pattern = "F116", x = rownames(geno))] <- "F116"
 var_family[grep(pattern = "F117", x = rownames(geno))] <- "F117"
-var_family[grep(pattern = "OFR6.10", x = rownames(geno))] <- "OFR6.10"
+#var_family[grep(pattern = "OFR6.10", x = rownames(geno))] <- "OFR6.10"
 
 ## Create variable holding alive (1) and dead (0) information
 var_status <- rep(x = NA, times = nrow(geno))
@@ -227,6 +222,7 @@ all.df$day.sampled[all.df$state=="Alive"] <- "D7"
 # Correct the naming issue for VIU family
 all.df$day.sampled <- gsub(pattern = "Day 4", replacement = "D4", x = all.df$day.sampled)
 table(all.df$day.sampled)
+table(all.df$state)
 
 # Prepare outputs for GWAS with all families
 gwaspheno = var_status
@@ -259,6 +255,7 @@ write.table(gwaspheno2, "03_results/gwaspheno2.txt",row.names = F, col.names = F
 gemma_output <- read.table(file = "03_results/output/gwas_allfam_covar_dead_alive.assoc.txt", header = T)
 gemma_gwas   <- gemma_output
 head(gemma_gwas)
+dim(gemma_gwas)
 
 # Separate marker name into chr and pos
 gemma_gwas <- separate(data = gemma_gwas, col = "rs", into = c("chromosome", "position")
@@ -273,8 +270,6 @@ gemma_gwas$chromosome <- as.numeric(gemma_gwas$chromosome)
 # Sort by chr
 gemma_gwas <- gemma_gwas[order(gemma_gwas$chromosome, gemma_gwas$position), ]
 head(gemma_gwas)
-
-
 
 # Determine number of inds
 nind <- length(colnames(gwasgeno)[colnames(gwasgeno)!=""])
@@ -329,4 +324,4 @@ fastman(gemma_gwas,
 )
 dev.off()
 
-
+# End
