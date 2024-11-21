@@ -1,23 +1,14 @@
-# ms_cgig_chr8
-Code repository to accompany all CHR8 analyses, which currently includes the following:     
-- [1. wgrs of OsHV-1 exposure survivors (CHR8 families)](#01-wgrs-of-oshv-1-exposure)    
-- [2. ddRADseq of Vibrio challenge survivors (CHR8 families)](#02-ocv23-analysis)      
-- [3. rhAmp assay for CHR8 genotypes in Vibrio challenge survivors (CHR8 families)](#03-OCV23-rhAmp-analysis)     
-- [4. Low-resolution GWAS with amplicon panel (OsHV-1 trial)](20_docs/README_LR_panel_GWAS.md)       
+# ms_cgig_chr8_vibrio
+Code repository to accompany response of CHR8 oyster families to _Vibrio aestuarianus_, which currently includes the following:     
+- [1. ddRADseq of Vibrio challenge survivors (CHR8 families)](#01-ocv23-analysis)      
+- [2. rhAmp assay for CHR8 genotypes in Vibrio challenge survivors (CHR8 families)](#02-OCV23-rhAmp-analysis)     
 
 #### Requirements ####
-[amplitools](https://github.com/bensutherland/amplitools)      
 [simple_pop_stats](https://github.com/bensutherland/simple_pop_stats)    
 [stacks_workflow](https://github.com/enormandeau/stacks_workflow)       
-[wgrs_workflow](https://github.com/bensutherland/wgrs_workflow)        
 [GEMMA](https://github.com/genetics-statistics/GEMMA/tree/master)         
-[amplitargets](https://github.com/bensutherland/amplitargets)         
 
-### 01. WGRS of OsHV-1 exposure ###
-Follow `wgrs_workflow`.       
-
-
-### 02. OCV23 analysis ###
+### 01. OCV23 analysis ###
 #### a. Set up ####
 Use `stacks_workflow` to analyze the data. Clone the repo in the same parent folder as the present repo, change directory into `stacks_workflow` and run all commands from `stacks_workflow`.       
 
@@ -177,7 +168,7 @@ The SNPs are coded 0, 1, 2 to correspond to reference homozygote, heterozygote, 
 iv. Plots GWAS results as Manhattan plots
 
 
-### 03. OCV23 rhAmp analysis ###
+### 02. OCV23 rhAmp analysis ###
 Input files are csv files that are raw output from the genotyping platform (i.e., CFX96 instrument).     
 Copy all csv files with rhAmp results into `02_input_data`. The following column names are required, and should be standard in qPCR machine output:    
 `Well`, `Fluor`, `Content`, `Cq`    
@@ -196,29 +187,4 @@ After running the above script, you should have a file called `03_results/rhAmp_
 
 Use the following script interactively to plot the results:     
 `01_scripts/rhamp_06_plot_results.R`     
-
-
-### 03.b. COARL3 rhAmp analysis ###
-Input files are csv files that are raw output from the genotyping platform (i.e., CFX96 instrument).     
-Copy all csv files with rhAmp results into `02_input_data`. The following column names are required, and should be standard in qPCR machine output:    
-`Well`, `Fluor`, `Content`, `Cq`    
-
-Use the script `01_scripts/rhamp_01_read_in_and_format.R` to read in the data.    
-Outputs will include plots in `03_results` of FAM - VIC and FAM vs. VIC Cq values for detecting potential false positives calls.    
-In R, the output will be a list of dataframes in wide format, one for each input file.    
-
-Use the script `01_scripts/rhamp_02_data_checking.R`     
-Based on the graphs provided in the previous script, determine the appropriate cutoff for your false positive VIC or FAM calls. These values will be set in this script.    
-Outputs of this script will be a single large dataframe with corrected heterozygote calls, based on input cutoff values for false positive detections.     
-
-Use the script `01_scripts/rhamp_03_call_genos.R`      
-This will call genotypes based on the input.     
-
-Use the script `01_scripts/rhamp_04_well_to_sample.R` to connect samples to the user-supplied annotation file. Set the annotation file variable in this script, and it should be in the following format:     
-plate	well	sample 	assay
-...the plate value should be the same as the plate section of the full.id variable, which is typically the plate name before the date.    
-
-
-### 04. Low-resolution GWAS with amplicon panel (OsHV-1 trial) ###
-See appendix README: [Low-resolution GWAS with amplicon panel (OsHV-1 trial)](20_docs/README_LR_panel_GWAS.md)
 
