@@ -105,17 +105,19 @@ Use the single-SNP per locus data.
 Convert plink files to a useable format for adegenet:        
 `plink --ped 05-stacks/popn_out_single_snp/populations.plink.ped --map 05-stacks/popn_out_single_snp/populations.plink.map --maf 0.01 --recode A --allow-extra-chr --out 05-stacks/popn_out_single_snp/populations_single_snp`      
 
+Note: these plink files are available from [FigShare](https://doi.org/10.6084/m9.figshare.26524321.v1)       
 
 #### l. Population genetic analysis ####
 Read the data into R using the script `01_scripts/01_import_plink_to_genind.R`           
 
 #### m. Genome-wide association study (GWAS) ####
-From `stacks_workflow`, copy the output plink map file and the VCF file into `ms_cgig_chr8/02_input_data/`.    
+From `stacks_workflow` (or FigShare link above), copy the output plink map file, the VCF file, and the sample interpretaion file into `ms_cgig_chr8/02_input_data/`.    
 
 Open `01_scripts/GWAS.R` in Rstudio interactively.    
 Inputs:    
-- `populations.snps_single-SNP_per_tag_2023-10-23.vcf`    
-- `populations.plink_2023-10-23.map`         
+- `sample_interp_2024-07-18.csv`   
+- non-imputed VCF `populations.snps.vcf`   
+- imputed VCF `populations.snps.imputed.vcf`     
 
 The following steps are taken:   
 i. Changes linkage group (LG) RefSeq genome annotations to corresponding chromosome annotations and removes all other contigs in the RefSeq genome    
