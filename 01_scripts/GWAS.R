@@ -2,45 +2,58 @@
 # K. Divilov, B. Sutherland, L. Surry
 # initialized 2023-12-29
 
-#### 00. Front Matter ####
-# Clear space
-# rm(list=ls())
+# Requires
+# - "01_scripts/03_sps_analysis.R" has been run and output saved
+# - sample interpretation file available, as set below
 
-## Install packages
-# install.packages("vcfR")
+#### 00. Front Matter ####
+# Clear space and source simple_pop_stats_start.R
+
+## Install additional packages
 # install.packages("fastman")
 # install.packages("missMethods")
-# install.packages("rstudioapi")
 # install.packages("tidyr")
 # install.packages("norm")
 
 # Load libraries
-library(vcfR)
 library(fastman)
 library(missMethods)
-library(rstudioapi)
 library(tidyr)
 library(norm)
 
-# Set working directory to the ms_scallop_popgen repo
-current.path <- dirname(rstudioapi::getSourceEditorContext()$path)
-current.path <- gsub(pattern = "\\/01_scripts", replacement = "", x = current.path)
-setwd(current.path)
-rm(current.path)
-
 # User-set variables
-#VCF.FN <- "02_input_data/populations.snps.vcf" # standard analysis
-VCF.FN <- "02_input_data/populations.snps.imputed.vcf.gz" # imputed analysis (linkImputeR, 2024-10-25)
 interp.FN <- "02_input_data/sample_interp_2024-07-18.csv"
+datatype <- "standard" # standard or LinkImputeR
+LinkImputeR_VCF.FN <- "02_input_data/populations.snps.imputed.vcf.gz" # if using datatype == LinkImputeR
+
+internal_impute <- "none" # mean or none
+
+# Load data
+load(file = "03_results/post_all_filters_post_multivariate.RData")
+
+# Load additional data (custom)
+if(datatype=="LinkImputeR"){
+  
+  print("Loading LinkImputeR VCF file")
+  
+  # Read in genotype data
+  vcf.imputed <- read.vcfR(file = LinkImputeR_VCF.FN)
+  vcf.imputed
+  
+}
 
 
-#### 01. Read in data ####
-# Read in genotype data
-vcf <- read.vcfR(file = VCF.FN)
-vcf
+# Filter the VCF to only keep the retained samples and loci
+setdiff(x = indNames(obj), y = colnames(vcf@gt))
+keep <- indNames(obj)
+vcf_filt <- vcf[, c("FORMAT", keep)]
+
+# Confirm subset worked
+setdiff(x = colnames(vcf@gt), y = indNames(obj))
+setdiff(x = colnames(vcf_filt@gt), y = indNames(obj))
 
 
-#### 02. Prepare marker names and CHR info ####
+#### 02. Information regarding correspondence of LGs to Chrs ####
 # # Add linkage group (LG) info to map file, based on https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_902806645.1/
 # map$LG = NA
 # map$LG[map$V1=="NC_047559.1"] = 1
@@ -66,15 +79,12 @@ vcf
 # map$Chr[map$LG==8] = "Chr5"
 # map$Chr[map$LG==9] = "Chr10"
 # map$Chr[map$LG==10] = "Chr8"
-# 
-# head(map)
-# 
-# # Create marker name (chr_pos)
-# map$SNPname = paste(map$Chr, map$V4, sep="_")
-# head(map)
 
 
 #### 03. Prepare genotypes ####
+# Rename VCF for simplicity
+vcf <- vcf_filt
+
 # Replace ID with chr and positional info
 head(vcf@fix)
 vcf.df <- vcf@fix
@@ -133,61 +143,45 @@ dim(geno)
 geno = geno[-grep("OFR6",rownames(geno)),]
 dim(geno)
 
-# # Create family-specific genotype matrices
-# geno_F114 = geno[grep("F114",rownames(geno)),]
-# geno_F115 = geno[grep("F115",rownames(geno)),]
-# geno_F116 = geno[grep("F116",rownames(geno)),]
-# geno_F117 = geno[grep("F117",rownames(geno)),]
-# geno_OFR6.10 = geno[grep("OFR6.10",rownames(geno)),]
 
-# # Family-specific imputation
-# if(impute_type == "mean"){
-#   
-#   print("Using imputation type 'mean'")
-#   
-#   # Run family-specific mean imputation on genotypes
-#   geno_F114_impute = impute_mean(geno_F114)
-#   geno_F115_impute = impute_mean(geno_F115)
-#   geno_F116_impute = impute_mean(geno_F116)
-#   geno_F117_impute = impute_mean(geno_F117)
-#   geno_OFR6.10_impute = impute_mean(geno_OFR6.10)
-#   
-# }else if(impute_type == "EM"){
-#   
-#   print("Using imputation type 'EM'")
-#   
-#   # Run family-specific EM imputation on genotypes
-#   geno_F114_impute = impute_EM(geno_F114)
-#   geno_F115_impute = impute_EM(geno_F115)
-#   geno_F116_impute = impute_EM(geno_F116)
-#   geno_F117_impute = impute_EM(geno_F117)
-#   geno_OFR6.10_impute = impute_EM(geno_OFR6.10)
-#   
-# }
-# 
-# 
-# # Reconstruct full genotype matrix
-# geno = rbind(geno_F114_impute,
-#              geno_F115_impute,
-#              geno_F116_impute,
-#              geno_F117_impute,
-#              geno_OFR6.10_impute)
+##### 03.2. Optional internal imputation #####
+if(internal_impute=="mean"){
+  
+  print("Using the mean imputation method")
+  
+  # Create family-specific genotype matrices
+  geno_F114 = geno[grep("F114",rownames(geno)),]
+  geno_F115 = geno[grep("F115",rownames(geno)),]
+  geno_F116 = geno[grep("F116",rownames(geno)),]
+  geno_F117 = geno[grep("F117",rownames(geno)),]
+  
+  # Run family-specific mean imputation on genotypes
+  geno_F114_impute = impute_mean(geno_F114)
+  geno_F115_impute = impute_mean(geno_F115)
+  geno_F116_impute = impute_mean(geno_F116)
+  geno_F117_impute = impute_mean(geno_F117)
+  
+  # Reconstruct full genotype matrix
+  geno = rbind(geno_F114_impute,
+               geno_F115_impute,
+               geno_F116_impute,
+               geno_F117_impute
+               )
+
+}else{
+  
+  print("Not conducting internal imputation (within R)")
+  
+}
 
 
 #### 04. Prepare GEMMA inputs ####
-# For the full geno matrix, create variable holding family information
-var_family <- rep(NA, nrow(geno))
-var_family[grep(pattern = "F114", x = rownames(geno))] <- "F114"
-var_family[grep(pattern = "F115", x = rownames(geno))] <- "F115"
-var_family[grep(pattern = "F116", x = rownames(geno))] <- "F116"
-var_family[grep(pattern = "F117", x = rownames(geno))] <- "F117"
-#var_family[grep(pattern = "OFR6.10", x = rownames(geno))] <- "OFR6.10"
-
 ## Create variable holding alive (1) and dead (0) information
 var_status <- rep(x = NA, times = nrow(geno))
 var_status[grep(pattern = "Alive", x = rownames(geno))] <- "1"
 var_status[grep(pattern = "Dead", x = rownames(geno))]  <- "0"
 var_status <- as.numeric(var_status)
+cbind(rownames(geno), var_status) # to inspect
 
 ## Create variable holding day-of-death variable
 interp.df <- read.table(file = interp.FN, header = T, sep = ",") # read in interp data
@@ -204,10 +198,18 @@ head(indiv.df) # order of the samples in the genotype matrix
 indiv.df <- separate(data = indiv.df, col = "indiv.df", into = c("family.state", "dna.id"), sep = "_", remove = F)
 head(indiv.df)
 
+# To ensure retention of order
+indiv.df$order <- seq(1:nrow(indiv.df))
+head(indiv.df)
+tail(indiv.df)
+
 # Combine interp with the ordered individual names
 length(intersect(x = indiv.df$dna.id, y = interp.df$dna.id))
 nrow(indiv.df)
 all.df <- merge(x = indiv.df, y = interp.df, by = "dna.id", all.x = T, sort = F) # sort = F necessary
+
+# Just in case, reorder back to the order col
+all.df <- all.df[order(all.df$order), ]
 dim(all.df)
 head(all.df)
 head(indiv.df)
@@ -226,7 +228,6 @@ table(all.df$state)
 
 # Prepare outputs for GWAS with all families
 gwaspheno = var_status
-gwascovar = model.matrix(~as.factor(var_family))
 gwasgeno = t(geno)
 gwasgeno = cbind(rownames(gwasgeno),"X","Y",gwasgeno)
 gwasanno = cbind(rownames(gwasgeno),
@@ -235,7 +236,6 @@ gwasanno = cbind(rownames(gwasgeno),
                  0)
 
 write.table(gwaspheno, "03_results/gwaspheno.txt",row.names = F,col.names = F)
-write.table(gwascovar, "03_results/gwascovar.txt",row.names = F,col.names = F)
 write.table(gwasanno, "03_results/gwasanno.txt",row.names = F,col.names = F,quote = F)
 write.table(gwasgeno, "03_results/gwasgeno.txt",row.names = F,col.names = F,quote = F)
 
@@ -251,8 +251,8 @@ write.table(gwaspheno2, "03_results/gwaspheno2.txt",row.names = F, col.names = F
 
 
 #### 06. Plot GEMMA output ####
-# Binary phenotype
-gemma_output <- read.table(file = "03_results/output/gwas_allfam_pheno_dead_alive.assoc.txt", header = T)
+# Load data
+gemma_output <- read.table(file = "03_results/output/gwas_allfam.assoc.txt", header = T)
 gemma_gwas   <- gemma_output
 head(gemma_gwas)
 dim(gemma_gwas)
@@ -274,56 +274,19 @@ head(gemma_gwas)
 # Determine number of inds
 nind <- length(colnames(gwasgeno)[colnames(gwasgeno)!=""])
 
-pdf(file = "03_results/Manhattan_plot_all_fam_binary_pheno.pdf"
-    , width = 8.5, height = 4)
+pdf(file = "03_results/Manhattan_plot.pdf", width = 8, height = 4)
 par(mfrow = c(1,1), mar = c(5,4,4,2) +0.1, mgp = c(3,1,0))
 fastman(gemma_gwas,
-        chr = "chromosome",
-        bp = "position",
-        p="p_lrt",
-        genomewideline = -log10(0.05/nrow(gemma_gwas)),
-        suggestiveline = NULL
+        , chr = "chromosome"
+        , bp = "position"
+        , p="p_lrt"
+        , genomewideline = -log10(0.05/nrow(gemma_gwas))
+        , suggestiveline = NULL
         , cex=1
-        ,cex.lab=1,cex.axis=1,
-        ylim=c(0,6),
-        #main= paste0("All families with fixed covariate, dead/alive pheno (n = ", nind, ")")
+        , cex.lab=1
+        , cex.axis=1
+        , ylim=c(0,6)
         )
-dev.off()
-
-# Days-to-death phenotype
-gemma_output <- read.table(file = "03_results/output/gwas_allfam_covar_pheno_day_to_death.assoc.txt", header = T)
-gemma_gwas   <- gemma_output
-head(gemma_gwas)
-
-# Separate marker name into chr and pos
-gemma_gwas <- separate(data = gemma_gwas, col = "rs", into = c("chromosome", "position")
-                       , sep = "__", remove = F)
-head(gemma_gwas)
-gemma_gwas$position <- as.numeric(gemma_gwas$position)
-
-# Convert chr name to number
-gemma_gwas$chromosome <- gsub(pattern = "Chr", replacement = "", x = gemma_gwas$chromosome)
-gemma_gwas$chromosome <- as.numeric(gemma_gwas$chromosome)
-
-# Sort by chr
-gemma_gwas <- gemma_gwas[order(gemma_gwas$chromosome, gemma_gwas$position), ]
-head(gemma_gwas)
-
-# How many inds? 
-nind <- length(colnames(gwasgeno)[colnames(gwasgeno)!=""])
-
-pdf(file = "03_results/Manhattan_plot_all_fam_w_covar_day-to-death_pheno.pdf", width = 6.5, height = 4.5)
-par(mfrow = c(1,1), mar = c(5,4,4,2) +0.1, mgp = c(3,1,0))
-fastman(gemma_gwas,
-        chr = "chromosome",
-        bp = "position",
-        p="p_lrt",
-        genomewideline = -log10(0.05/nrow(gemma_gwas)),
-        suggestiveline = NULL,
-        cex=1.5,cex.lab=1.5,cex.axis=1,
-        ylim=c(0,6),
-        #main= paste0("All families with fixed covariate, days-to-death pheno (n = ", nind, ")")
-)
 dev.off()
 
 # End
