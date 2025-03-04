@@ -29,7 +29,7 @@ setwd(current.path)
 rm(current.path)
 
 # User-set variables
-#VCF.FN <- "02_input_data/populations.snps_single-SNP_per_tag_2023-10-23.vcf" # standard analysis
+#VCF.FN <- "02_input_data/populations.snps.vcf" # standard analysis
 VCF.FN <- "02_input_data/populations.snps.imputed.vcf.gz" # imputed analysis (linkImputeR, 2024-10-25)
 interp.FN <- "02_input_data/sample_interp_2024-07-18.csv"
 
@@ -252,7 +252,7 @@ write.table(gwaspheno2, "03_results/gwaspheno2.txt",row.names = F, col.names = F
 
 #### 06. Plot GEMMA output ####
 # Binary phenotype
-gemma_output <- read.table(file = "03_results/output/gwas_allfam_covar_dead_alive.assoc.txt", header = T)
+gemma_output <- read.table(file = "03_results/output/gwas_allfam_pheno_dead_alive.assoc.txt", header = T)
 gemma_gwas   <- gemma_output
 head(gemma_gwas)
 dim(gemma_gwas)
@@ -274,15 +274,17 @@ head(gemma_gwas)
 # Determine number of inds
 nind <- length(colnames(gwasgeno)[colnames(gwasgeno)!=""])
 
-pdf(file = "03_results/Manhattan_plot_all_fam_w_covar_binary_pheno.pdf", width = 6.5, height = 4.5)
+pdf(file = "03_results/Manhattan_plot_all_fam_binary_pheno.pdf"
+    , width = 8.5, height = 4)
 par(mfrow = c(1,1), mar = c(5,4,4,2) +0.1, mgp = c(3,1,0))
 fastman(gemma_gwas,
         chr = "chromosome",
         bp = "position",
         p="p_lrt",
         genomewideline = -log10(0.05/nrow(gemma_gwas)),
-        suggestiveline = NULL,
-        cex=1.5,cex.lab=1.5,cex.axis=1,
+        suggestiveline = NULL
+        , cex=1
+        ,cex.lab=1,cex.axis=1,
         ylim=c(0,6),
         #main= paste0("All families with fixed covariate, dead/alive pheno (n = ", nind, ")")
         )
