@@ -110,6 +110,10 @@ write.table(x = loci, file = "03_results/retained_loci.txt", sep = "\t", quote =
 mean(missing_data.df[missing_data.df$ind.per.missing < 0.3, "ind.per.missing"]) # 0.042
 sd(missing_data.df[missing_data.df$ind.per.missing < 0.3, "ind.per.missing"])   # 0.038
 
+# Summarize number survived and number dead post filters
+table(gsub(pattern = "_.*", replacement = "", x = indNames(obj)))
+
+
 
 ##### 03.2 Loci by HWE and excess Hobs #####
 # Not running HOBS or HWE filter, due to family effects expected
