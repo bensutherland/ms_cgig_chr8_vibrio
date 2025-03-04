@@ -119,55 +119,37 @@ Inputs:
 - non-imputed VCF `populations.snps.vcf`   
 - imputed VCF `populations.snps.imputed.vcf`     
 
-The following steps are taken:   
-i. Changes linkage group (LG) RefSeq genome annotations to corresponding chromosome annotations and removes all other contigs in the RefSeq genome    
-ii. Imputes missing genotypes within each family independently using mean imputation    
+The script will do the following:   
+i. Change linkage group (LG) RefSeq genome annotations to corresponding chromosome annotations and removes all other contigs in the RefSeq genome    
+ii. Optional: impute missing genotypes within each family independently using mean imputation    
+iii. Prepare GEMMA inputs      
+iv. Plot GEMMA results in Manhattan plots.    
 
 This Rscript will export the following files into `03_results`:    
 - gwasanno.txt (annotation of the SNPs)
-- gwascovar.txt (family covariate)
 - gwasgeno.txt (genotype matrix)
 - gwaspheno.txt (binary dead/alive vector)
 - gwaspheno2.txt (numeric days to death vector)
 
-Use GEMMA to run a GWAS using these files:     
-
+Midway through the R script, use GEMMA to run a GWAS using these files:     
 ```
 # Run in command-line
 # change directory into 03_results
 
 # Calculate kinship matrix
-gemma -g gwasgeno.txt -p gwaspheno.txt -gk -maf 0.05 -o gwas_allfam_pheno_dead_alive
+gemma -g gwasgeno.txt -p gwaspheno.txt -gk -maf 0.05 -o gwas_allfam
 
 # Run the GWAS analysis with the family covariate and binary phenotype
-gemma -g gwasgeno.txt -p gwaspheno.txt -k output/gwas_allfam_pheno_dead_alive.cXX.txt  -n 1 -c gwascovar.txt -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_allfam_covar_dead_alive
+gemma -g gwasgeno.txt -p gwaspheno.txt -k output/gwas_allfam.cXX.txt -n 1 -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_allfam
 
-# Run the GWAS analysis with the family covariate and numeric day-to-death phenotype
-# Calculate kinship matrix
-gemma -g gwasgeno.txt -p gwaspheno2.txt -gk -maf 0.05 -o gwas_allfam_pheno_day_to_death
+# Go back to R script 01_scripts/04_GWAS.R to generate a Manhattan plot
 
-# Run the GWAS analysis with the family covariate and day-to-death phenotype
-gemma -g gwasgeno.txt -p gwaspheno2.txt -k output/gwas_allfam_pheno_day_to_death.cXX.txt -n 1 -c gwascovar.txt -a gwasanno.txt -maf 0.05 -lmm 4 -o gwas_allfam_covar_pheno_day_to_death
+# Then save the output folder and Manhattan plot into a subfolder, e.g., 03_results/gemma_dead_or_alive_no_impute/ 
 
+# note: to analyze the second phenotype, simply replace gwaspheno.txt with gwaspheno2.txt, but do this after Manhattan plot was generated.    
 ```
 
-
-iii. Runs the following GWAS models using GEMMA (MAF threshold of 0.05):       
-
-With all families (4 MBP families + VIU family) together:    
-Phenotype (survival; 1-alive, 0-dead) = SNP (fixed) + Population structure (random; covariance matrix = G [genomic relationship] matrix) + error (random; covariance matrix = identity matrix)    
-Phenotype (survival) = SNP (fixed) + Family effect (fixed) + Population structure (random; G matrix) + error (random; identity matrix)    
-
-With all 4 MBP families together:    
-Phenotype (survival) = SNP (fixed) + Population structure (random; G matrix) + error (random; identity matrix)    
-Phenotype (survival) = SNP (fixed) + Family effect (fixed) + Population structure (random; G matrix) + error (random; identity matrix)    
-
-With all families independently:    
-Phenotype (survival) = SNP (fixed) + error (random; identity matrix)  
-
-The SNPs are coded 0, 1, 2 to correspond to reference homozygote, heterozygote, and alternative homozygote genotypes, respectively. Therefore, the models assume the allele are additive (rather than exhibiting dominance, for example). 
-
-iv. Plots GWAS results as Manhattan plots
+Note: SNPs are coded 0, 1, 2 to correspond to reference homozygote, heterozygote, and alternative homozygote genotypes, respectively. Therefore, the models assume the allele are additive (rather than exhibiting dominance, for example). 
 
 
 ### 02. OCV23 rhAmp analysis ###
