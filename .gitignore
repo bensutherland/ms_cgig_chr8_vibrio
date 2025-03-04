@@ -18,4 +18,5 @@
 *.vcf.gz* 
 *.genotypes
 *.haplotypes
+*#
 

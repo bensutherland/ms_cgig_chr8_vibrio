@@ -1,4 +1,6 @@
 # Import the data from plink format to genind file
+# UPDATE: this script is no longer required as of 2025-03-04 (analysis v.0.2)
+# UPDATE:   go straight to 01_scripts/02_sps_char_and_filt.R
 # B. Sutherland (2023-10-23)
 ### Front Matter ####
 # Clean space
