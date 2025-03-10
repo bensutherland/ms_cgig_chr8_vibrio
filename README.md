@@ -8,6 +8,16 @@ Code repository to accompany response of CHR8 oyster families to _Vibrio aestuar
 [stacks_workflow](https://github.com/enormandeau/stacks_workflow)       
 [GEMMA](https://github.com/genetics-statistics/GEMMA/tree/master)         
 
+#### Input materials ####
+Metadata and intermediate files are available on FigShare for the following:    
+- ddRADseq analysis [FigShare](https://doi.org/10.6084/m9.figshare.26524321.v1)        
+- rhAmp assay analysis [FigShare](https://doi.org/10.6084/m9.figshare.26515438.v1)     
+
+#### Citation ####
+Please see the following publication:     
+Surry LB, Sutherland BJG, et al. The presence of the Pacific oyster OsHV-1 resistance marker on chromosome 8 does not impact susceptibility to infection by *Vibrio aestuarianus*. bioRxiv 2024.11.25.625178; doi: https://doi.org/10.1101/2024.11.25.625178      
+
+
 ### 01. OCV23 analysis ###
 #### a. Set up ####
 Use `stacks_workflow` to analyze the data. Clone the repo in the same parent folder as the present repo, change directory into `stacks_workflow` and run all commands from `stacks_workflow`.       
@@ -101,23 +111,21 @@ mv 05-stacks/populations.* 05-stacks/popn_out_single_snp/
 ```
 
 #### k. Convert output plink data ####
-Use the single-SNP per locus data.      
-Convert plink files to a useable format for adegenet:        
-`plink --ped 05-stacks/popn_out_single_snp/populations.plink.ped --map 05-stacks/popn_out_single_snp/populations.plink.map --maf 0.01 --recode A --allow-extra-chr --out 05-stacks/popn_out_single_snp/populations_single_snp`      
-
-Note: these plink files are available from [FigShare](https://doi.org/10.6084/m9.figshare.26524321.v1)       
+Use the single-SNP per locus data in VCF format.      
 
 #### l. Population genetic analysis ####
-Read the data into R using the script `01_scripts/01_import_plink_to_genind.R`           
+Read the data into R using the script `01_scripts/01_sps_char_and_filt.R`.     
+This will use the repository `simple_pop_stats` functions to read in the VCF file, prepare populations colour file, calculate and plot per-sample missing data, calculate allele frequencies after removing high missing data individuals, and save output.      
+
+
+Analyze with `01_scripts/02_sps_analysis.R`     
+This will run a principal components analysis (PCA).     
+
 
 #### m. Genome-wide association study (GWAS) ####
-From `stacks_workflow` (or FigShare link above), copy the output plink map file, the VCF file, and the sample interpretaion file into `ms_cgig_chr8/02_input_data/`.    
-
-Open `01_scripts/GWAS.R` in Rstudio interactively.    
-Inputs:    
+Using the saved output of `01_scripts/02_sps_analysis.R` above, the script `01_scripts/03_GWAS.R` will use the loaded VCF file, filter to only the retained individuals, bring in the phenotype file, and create GEMMA input files.     
 - `sample_interp_2024-07-18.csv`   
 - non-imputed VCF `populations.snps.vcf`   
-- imputed VCF `populations.snps.imputed.vcf`     
 
 The script will do the following:   
 i. Change linkage group (LG) RefSeq genome annotations to corresponding chromosome annotations and removes all other contigs in the RefSeq genome    
@@ -157,7 +165,7 @@ Input files are csv files that are raw output from the genotyping platform (i.e.
 Copy all csv files with rhAmp results into `02_input_data`. The following column names are required, and should be standard in qPCR machine output:    
 `Well`, `Fluor`, `Content`, `Cq`    
 
-Copy the file `OSU_CHR8_VC_Mapping_Family114-117_2024-01-21_MFrhAmpDNAid.txt` (available from FigShare (#TODO)) into `00_archive`. This will be used to connect the well and plate ID to the sample ID.    
+Copy the file `OSU_CHR8_VC_Mapping_Family114-117_2024-01-21_MFrhAmpDNAid.txt` (available from [FigShare](https://doi.org/10.6084/m9.figshare.26515438.v1)) into `00_archive`. This will be used to connect the well and plate ID to the sample ID.    
 
 Run the Rscript `01_scripts/rhamp_assay_analysis.R` interactively to do the following:    
 - format as needed.    
