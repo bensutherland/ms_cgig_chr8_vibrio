@@ -1,7 +1,7 @@
 # simple_pop_stats analysis component of the OCV23 RADseq analysis
 # B. Sutherland
 # Initialized 2023-10-23
-# Requires first running "ms_cgig_chr8/01_scripts/02_sps_char_and_filt.R"
+# Requires first running "ms_cgig_chr8_vibrio/01_scripts/01_sps_char_and_filt.R"
 
 # Clear space and source simple_pop_stats_start.R
 
@@ -30,4 +30,4 @@ pca_from_genind(data = obj
 # Write out object
 save.image(file = "03_results/post_all_filters_post_multivariate.RData")
 
-# Go to "01_scripts/04_GWAS.R
+# Go to "01_scripts/03_GWAS.R

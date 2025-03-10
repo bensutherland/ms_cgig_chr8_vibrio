@@ -3,7 +3,7 @@
 # initialized 2023-12-29
 
 # Requires
-# - "01_scripts/03_sps_analysis.R" has been run and output saved
+# - "01_scripts/02_sps_analysis.R" has been run and output saved
 # - sample interpretation file available, as set below
 
 #### 00. Front Matter ####
