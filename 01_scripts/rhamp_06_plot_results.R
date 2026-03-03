@@ -31,6 +31,8 @@ library(Cairo) # required for rendering special characters such as arrows
 # Set user variables
 sample_id_interp.FN      <- "00_archive/sample_day_of_death_and_DNA_ID.csv"
 rhamp_to_geno_summary.FN <- "03_results/rhAmp_per_sample_genotype_summary.csv"
+mortality_barplot.FN     <- "00_archive/mortalitybarplot.csv"
+parental_crosses.FN      <- "02_input_data/OSU_MBP_parental_crosses.csv"
 
 
 #### 01. Load and prep data ####
@@ -302,43 +304,49 @@ dev.off()
 
 
 #### 05. Barplot showing per-family percent survivorship, grouped by common cross type, includes all families and control #### 
-mortalitybarplot          <- read.csv("00_archive/mortalitybarplot.csv")
-family_parental_genotypes <- read.csv("02_input_data/OSU_MBP_parental_crosses.csv")
+mortalitybarplot          <- read.csv(file = mortality_barplot.FN)
+family_parental_genotypes <- read.csv(file = parental_crosses.FN)
 
-#Convert % to proportions
+# Convert percentage number to proportion
 mortalitybarplot$survival <- mortalitybarplot$survival / 100
-mortalitybarplot$death <- mortalitybarplot$death / 100
+mortalitybarplot$death    <- mortalitybarplot$death / 100
+head(mortalitybarplot)
 
-#Switch F118 to Control
-mortalitybarplot$family[mortalitybarplot$family == "118"] <- "Control"
+# Switch F118 to Control
+mortalitybarplot$Family[mortalitybarplot$Family == "118"] <- "Control"
 
-#convert to long format
-mort_long <- reshape2::melt(mortalitybarplot, id.vars = "family", variable.name = "status", value.name = "percent")
+# Convert to long format
+mort_long <- reshape2::melt(mortalitybarplot, id.vars = "Family", variable.name = "status", value.name = "percent")
+head(mort_long)
 
-#Relabel family as chr
-mort_long$family <- as.character(mort_long$family)
+# Relabel family as character
+mort_long$Family <- as.character(mort_long$Family)
 
-#Set Colour pallete
+# Set colour pallete
 cbbPalette <- c("#CCCCCC", "#444444")
 
-#Make plot
-mort_bar <- ggplot(mort_long, aes(x = family, y = percent, fill = status)) + geom_bar(stat = "identity", colour = "black") + labs(x = "Family", y = "Proportion", fill = "Status") + theme_classic() +
+# Make plot
+mort_bar <- ggplot(mort_long, aes(x = Family, y = percent, fill = status)) + geom_bar(stat = "identity", colour = "black") + labs(x = "Family", y = "Proportion", fill = "Status") + theme_classic() +
   scale_fill_manual(values = cbbPalette) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), legend.position = "none") 
 
 #Save as PDF
 pdf(file = "03_results/barplot_prop_individuals_mortality_per_family.pdf", width = 8, height = 5.5)
-tiff(file = "03_results/barplot_prop_individuals_mortality_per_family.tiff", width = 8, height = 5.5, units = "in", res = 300)
+#tiff(file = "03_results/barplot_prop_individuals_mortality_per_family.tiff", width = 8, height = 5.5, units = "in", res = 300)
 print(mort_bar)
 dev.off()
 print(mort_bar)
 
 
 #### 06. Barplot showing per-family percent survivorship, grouped by common cross type ####
+# Source data
+head(mortalitybarplot)
+head(family_parental_genotypes)
 
-# Merge mortality proportions and family parental crosses by genotype. Requires file "OSU_MBP_parental_crosses
-mort_proportions_and_family_crosses <- merge(mortalitybarplot, family_parental_genotypes, by = "family")
+# Merge mortality proportions and family parental crosses by genotype 
+mort_proportions_and_family_crosses <- merge(mortalitybarplot, family_parental_genotypes, by.x = "Family", by.y = "family")
+head(mort_proportions_and_family_crosses)
 
-#make so genotype cross orders consistently regardless of which parent.
+# Make so genotype cross orders consistently regardless of which parent.
   order_function <- function(parent_1_genotype, parent_2_genotype) {
     if (parent_1_genotype < parent_2_genotype) {
     return(paste(parent_1_genotype, parent_2_genotype, sep = " x "))
@@ -347,105 +355,109 @@ mort_proportions_and_family_crosses <- merge(mortalitybarplot, family_parental_g
     }
   }
 
-#create genotype cross column
+# Create genotype cross column
 mort_proportions_and_family_crosses$parental_cross <- mapply(order_function, mort_proportions_and_family_crosses$parent_1_genotype, mort_proportions_and_family_crosses$parent_2_genotype)
 
-#calculate average mortality per genotype cross
+# Calculate average mortality per genotype cross
 average_mortality <- mort_proportions_and_family_crosses %>%
   group_by(parental_cross) %>%
   summarise(average_death = mean(death), average_survival = mean(survival))
 
-#Convert average mortality to long format
+# Convert average mortality to long format
 average_mortality <- reshape2::melt(average_mortality, id.vars = "parental_cross", variable.name = "status", value.name = "percent")
 
-#convert to long format
+# Convert to long format
 mort_proportions_and_family_crosses <- reshape2::melt(mort_proportions_and_family_crosses, 
-id.vars = c("family", "parental_cross"), variable.name = "status", value.name = "percent",measure.vars = c("survival", "death"))
+          id.vars = c("Family", "parental_cross")
+          , variable.name = "status"
+          , value.name = "percent"
+          , measure.vars = c("survival", "death")
+          )
 
 # Reorder parental cross genotypes 
 reorder_genotype <- c("(ref/ref) x (ref/ref)", "(alt/alt) x (ref/ref)", "(ref/alt) x (ref/alt)")
 mort_proportions_and_family_crosses$parental_cross <- factor(mort_proportions_and_family_crosses$parental_cross, levels = reorder_genotype)
 
-#Set colours                            
-cbbPalette <- c("death" = "#CCCCCC", "survival" = "#444444")  
+# Set colours                            
+cbbPalette <- c("survival" = "#CCCCCC", "death" = "#444444")  
 
 #Create bar plot grouped by genotype cross 
-mort_bar_family_genotype <- ggplot(mort_proportions_and_family_crosses, aes(x = family, y = percent, fill = status)) + geom_bar(stat = "identity", position = "stack", colour = "black") + labs(x = "Family", y = "Proportion") + theme_classic() + scale_fill_manual(values = cbbPalette) +
+mort_bar_family_genotype <- ggplot(mort_proportions_and_family_crosses, aes(x = Family, y = percent, fill = status)) + geom_bar(stat = "identity", position = "stack", colour = "black") + labs(x = "Family", y = "Proportion") + theme_classic() + scale_fill_manual(values = cbbPalette) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1), legend.position = "none") + facet_grid(~ parental_cross, scales = "free_x", space = "free_x")
 
 pdf(file = "03_results/barplot_prop_individuals_mort_parental_cross_x_families.pdf", width = 8, height = 5.5)
-tiff(file = "03_results/barplot_prop_individuals_mort_parental_cross_x_families.tiff", width = 8, height = 5.5, units = "in", res = 300)
+#tiff(file = "03_results/barplot_prop_individuals_mort_parental_cross_x_families.tiff", width = 8, height = 5.5, units = "in", res = 300)
 
 print(mort_bar_family_genotype)
 dev.off()
 print(mort_bar_family_genotype)
 
-#bar plot based on average mortality per parental cross 
-cbbPalette <- c("average_survival" = "#CCCCCC", "average_death" = "#444444")
+# #bar plot based on average mortality per parental cross 
+# cbbPalette <- c("average_survival" = "#CCCCCC", "average_death" = "#444444")
+# 
+# average_morts_parental_crosses_no_fam_barplot <- ggplot(average_mortality, aes(x = parental_cross, y = percent, fill = status)) +
+#   geom_bar(stat = "identity", position = "dodge", colour = "black") +
+#   labs(x = "Parental Cross", y = "Proportion") +
+#   theme_classic() +theme(legend.position = "none") + scale_fill_manual(values = cbbPalette)
+# 
+# pdf(file = "03_results/average_morts_parental_crosses_no_fam_barplot.pdf", width = 8, height = 5.5)
+# tiff(file = "03_results/average_morts_parental_crosses_no_fam_barplot.tiff", width = 8, height = 5.5, units = "in", res = 300)
+# print(average_morts_parental_crosses_no_fam_barplot)
+# dev.off()
+# print(average_morts_parental_crosses_no_fam_barplot)
 
-average_morts_parental_crosses_no_fam_barplot <- ggplot(average_mortality, aes(x = parental_cross, y = percent, fill = status)) +
-  geom_bar(stat = "identity", position = "dodge", colour = "black") +
-  labs(x = "Parental Cross", y = "Proportion") +
-  theme_classic() +theme(legend.position = "none") + scale_fill_manual(values = cbbPalette)
 
-pdf(file = "03_results/average_morts_parental_crosses_no_fam_barplot.pdf", width = 8, height = 5.5)
-tiff(file = "03_results/average_morts_parental_crosses_no_fam_barplot.tiff", width = 8, height = 5.5, units = "in", res = 300)
-print(average_morts_parental_crosses_no_fam_barplot)
-dev.off()
-print(average_morts_parental_crosses_no_fam_barplot)
-
-
-####07. Basic violin and boxplot for genotype versus mortality####
-
-#Looping to make box plot and violin plot for every family.
-
-# create an empty list to store the plots
-families <- c(114, 115, 116, 117)
-boxplots <- list()
-violins <- list()
-
-# set the layout of the graphics device for the box plots
-par(mfrow = c(2, 2))
-
-for (f in families) {
-  # subset the data for each family
-  rhamp_family <- subset(rhamp_families, family == f)
-  
-  # save and plot the box plot for each family 
-  tiff(paste0("boxplot_", f, ".tiff"), width =8.95275591, height = 10.102322, units = "in", res = 300) 
-  
-  
-  boxplot <- ggplot(data = rhamp_family) + geom_boxplot(aes(x = majority.geno, y = day_of_death, fill = majority.geno)) + labs(x = "Genotype", y = "Day of Death") + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + theme(axis.text = element_text(size = 28),axis.title = element_text(size = 22),legend.key.size = unit(4, 'cm'),legend.title = element_text(size = 22),legend.text = element_text(size = 22), legend.position = "none") + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 15, fontface = "bold") 
-  
-  print(boxplot)
-  graphics.off() 
-  boxplots[[f]] <- boxplot
-  
-  # save and plot the violin plot for each family
-  png(paste0("violin_", f, ".png"), width = 6, height = 4, units = "in", res = 300) 
-  rhamp.violin <- ggplot(data= rhamp_family)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + theme(axis.text = element_text(size = 18)) + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 15, fontface = "bold")
-  print(rhamp.violin) 
-  graphics.off() 
-  
-  # add the violin plot to the list
-  violins[[f]] <- rhamp.violin
-}
-
-#Install purr
-if (!require(purrr)) {
-  install.packages("purrr")
-  library(purrr)
-}
-# remove NULL values from the lists
-boxplots <- purrr::compact(boxplots)
-violins <- purrr::compact(violins)
-
-#Combine box plots into one
-tiff("combined_boxplots.tiff", width = 11, height = 9, units = "in", res = 300)
-grid.arrange(grobs = boxplots, nrow = 2, ncol = 2)
-graphics.off()
-
-# Combine all violin plots into one plot and save it as a tiff file
-tiff("combined_violins.tiff", width = 11, height = 9, units = "in", res = 300)
-grid.arrange(grobs = violins, nrow = 2, ncol = 2)
-graphics.off()
+# ####07. Basic violin and boxplot for genotype versus mortality####
+# 
+# #Looping to make box plot and violin plot for every family.
+# 
+# # create an empty list to store the plots
+# families <- c(114, 115, 116, 117)
+# boxplots <- list()
+# violins <- list()
+# 
+# # set the layout of the graphics device for the box plots
+# par(mfrow = c(2, 2))
+# 
+# for (f in families) {
+#   # subset the data for each family
+#   rhamp_family <- subset(rhamp_families, family == f)
+#   
+#   # save and plot the box plot for each family 
+#   tiff(paste0("boxplot_", f, ".tiff"), width =8.95275591, height = 10.102322, units = "in", res = 300) 
+#   
+#   
+#   boxplot <- ggplot(data = rhamp_family) + geom_boxplot(aes(x = majority.geno, y = day_of_death, fill = majority.geno)) + labs(x = "Genotype", y = "Day of Death") + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + theme(axis.text = element_text(size = 28),axis.title = element_text(size = 22),legend.key.size = unit(4, 'cm'),legend.title = element_text(size = 22),legend.text = element_text(size = 22), legend.position = "none") + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 15, fontface = "bold") 
+#   
+#   print(boxplot)
+#   graphics.off() 
+#   boxplots[[f]] <- boxplot
+#   
+#   # save and plot the violin plot for each family
+#   png(paste0("violin_", f, ".png"), width = 6, height = 4, units = "in", res = 300) 
+#   rhamp.violin <- ggplot(data= rhamp_family)+ geom_violin(aes(x=majority.geno, y= day_of_death, group = majority.geno, fill = majority.geno, colour = majority.geno)) + theme_classic() + xlab("Genotype") + ylab("Day of Death") + labs(fill = "Genotype", colour = "Genotype") + theme(axis.text = element_text(size = 18)) + scale_y_continuous(labels = c("3", "4", "5", "6", "Survivors")) + annotate("text", x = Inf, y = Inf, label = paste0("F", f), hjust = 1.4, vjust = 1, size = 15, fontface = "bold")
+#   print(rhamp.violin) 
+#   graphics.off() 
+#   
+#   # add the violin plot to the list
+#   violins[[f]] <- rhamp.violin
+# }
+# 
+# #Install purr
+# if (!require(purrr)) {
+#   install.packages("purrr")
+#   library(purrr)
+# }
+# # remove NULL values from the lists
+# boxplots <- purrr::compact(boxplots)
+# violins <- purrr::compact(violins)
+# 
+# #Combine box plots into one
+# tiff("combined_boxplots.tiff", width = 11, height = 9, units = "in", res = 300)
+# grid.arrange(grobs = boxplots, nrow = 2, ncol = 2)
+# graphics.off()
+# 
+# # Combine all violin plots into one plot and save it as a tiff file
+# tiff("combined_violins.tiff", width = 11, height = 9, units = "in", res = 300)
+# grid.arrange(grobs = violins, nrow = 2, ncol = 2)
+# graphics.off()
