@@ -166,7 +166,7 @@ Input files are csv files that are raw output from the genotyping platform (i.e.
 Copy all csv files with rhAmp results into `02_input_data`. The following column names are required, and should be standard in qPCR machine output:    
 `Well`, `Fluor`, `Content`, `Cq`    
 
-Copy the file `OSU_CHR8_VC_Mapping_Family114-117_2024-01-21_MFrhAmpDNAid.txt` (available from [FigShare](https://doi.org/10.6084/m9.figshare.26515438.v1)) into `00_archive`. This will be used to connect the well and plate ID to the sample ID.    
+Copy the file `OSU_CHR8_VC_Mapping_Family114-117_2024-01-21_MFrhAmpDNAid.txt` (available from [FigShare](https://doi.org/10.6084/m9.figshare.26524321.v1)) into `00_archive`. This will be used to connect the well and plate ID to the sample ID.    
 
 Run the Rscript `01_scripts/rhamp_01_read_in_and_format.R` and following scripts iinteractively.     
 
@@ -176,7 +176,7 @@ Obtain the following files from [FigShare](https://doi.org/10.6084/m9.figshare.2
 - `sample_day_of_death_and_DNA_ID.csv` put in `00_archive`       
 - `rhAmp_per_sample_genotype_summary.csv` put in `03_results` (or obtain from above rhAmp genotyping steps)
 - `mortalitybarplot.csv` put in `00_archive`        
-- `OSU_MBP_parental_crosses.csv` put in `02_input_data` (#TODO: still needed to be added to repo)    
+- `OSU_MBP_parental_crosses.csv` put in `02_input_data`    
 
 Use the following script interactively to plot the results:     
 `01_scripts/rhamp_06_plot_results.R`     
