@@ -17,6 +17,7 @@ rm(current.path)
 #install.packages("gridGraphics")
 #install.packages("cowplot")
 #install.packages("ggpubrr")
+#install.packages("Cairo")
 
 library(ggplot2)
 library(tidyr)
@@ -25,18 +26,21 @@ library(gridGraphics)
 library(gridExtra)
 library(cowplot)
 library(ggpubr)
+library(Cairo) # required for rendering special characters such as arrows
 
 # Set user variables
-sample_id_interp.FN <- "00_archive/sample_day_of_death_and_DNA_ID.csv"
+sample_id_interp.FN      <- "00_archive/sample_day_of_death_and_DNA_ID.csv"
 rhamp_to_geno_summary.FN <- "03_results/rhAmp_per_sample_genotype_summary.csv"
 
 
 #### 01. Load and prep data ####
+# Read in sample ID and day post exposure survival phenotype
 sample_id_interp.df <- read.csv(file = sample_id_interp.FN)
 sample_id_interp.df <- as.data.frame(sample_id_interp.df)
 head(sample_id_interp.df)
 dim(sample_id_interp.df)
 
+# Read in per sample Chr8 genotype calls (with sample ID)
 rhamp_to_geno_summary.df <- read.csv(file = rhamp_to_geno_summary.FN)
 rhamp_to_geno_summary.df <- as.data.frame(rhamp_to_geno_summary.df)
 head(rhamp_to_geno_summary.df)
@@ -54,7 +58,8 @@ rhamp_merged.df <- separate(data = rhamp_merged.df, col = "family.ID"
                            )
 head(rhamp_merged.df)
 unique(rhamp_merged.df$day_of_death)
-# Update alive to a arbitrary later-date of 7
+
+# Update 'alive' to a post-experiment day value (7)
 rhamp_merged.df$day_of_death <- gsub(pattern = "6_ALIVE", replacement = "7", x = rhamp_merged.df$day_of_death)
 table(rhamp_merged.df$day_of_death)
 
@@ -65,10 +70,11 @@ rhamp_merged.df$day_of_death <- as.numeric(rhamp_merged.df$day_of_death)
 
 # Ensure all samples have genotypes
 unique(rhamp_merged.df$majority.geno)
+table(rhamp_merged.df$majority.geno)
 
 
-#### 02. Plot day of death by genotype per-family ####
-# Change genotypes to number of alternate alleles
+#### 02. Boxplot days-to-death by genotype per family ####
+# Convert genotype to the number of alternate alleles
 rhamp_merged.df$num_alt <- rhamp_merged.df$majority.geno
 rhamp_merged.df$num_alt <- gsub(pattern = "homo.ref", replacement = "0", x = rhamp_merged.df$num_alt)
 rhamp_merged.df$num_alt <- gsub(pattern = "het", replacement = "1", x = rhamp_merged.df$num_alt)
@@ -76,6 +82,7 @@ rhamp_merged.df$num_alt <- gsub(pattern = "homo.alt", replacement = "2", x = rha
 head(rhamp_merged.df)
 str(rhamp_merged.df)
 rhamp_merged.df$num_alt <- as.numeric(rhamp_merged.df$num_alt)
+table(rhamp_merged.df$num_alt)
 
 # Subset families
 head(rhamp_merged.df)
@@ -83,11 +90,12 @@ head(rhamp_merged.df)
 # Separate data frame into families 
 rhamp_merged.df  <- separate(rhamp_merged.df, col = sample_family, into = c("project", "family"), sep = "_F", remove = F)
 
-#add a new column "mortality" to each data frame in the families list, encoding “died” as 1 and “survived” as 0 based on the day_of_death column.
+# Add a new column "mortality" to each data frame in the families list, encoding “died” as 1 and “survived” as 0 based on the day_of_death column.
 rhamp_merged.df <- rhamp_merged.df %>%
   mutate(mortality = ifelse(`day_of_death` %in% 3:6, 1, 0))
+head(rhamp_merged.df)
 
-#Subset families
+# Subset families
 rhamp_family_114 <- subset(rhamp_merged.df, family == "114")
 rhamp_family_115 <- subset(rhamp_merged.df, family == "115")
 rhamp_family_116 <- subset(rhamp_merged.df, family == "116")
@@ -109,7 +117,7 @@ F115.plot  <-   ggplot(rhamp_family_115, aes(x = as.factor(num_alt), y= day_of_d
                   labs(x= "Number alternate alleles", y = "Days to death") +
                   theme(axis.text = element_text(size = 12), 
                         axis.title = element_text(size = 14))+ 
-  theme_classic()
+                  theme_classic()
                 
 F116.plot  <- ggplot(rhamp_family_116, aes(x = as.factor(num_alt), y= day_of_death)) + 
                   geom_boxplot(fill="gray") +
@@ -117,7 +125,7 @@ F116.plot  <- ggplot(rhamp_family_116, aes(x = as.factor(num_alt), y= day_of_dea
                   labs(x= "Number alternate alleles", y = "Days to death") +
                   theme(axis.text = element_text(size = 12), 
                         axis.title = element_text(size = 14))+ 
-  theme_classic()
+                  theme_classic()
                 
 F117.plot   <-  ggplot(rhamp_family_117, aes(x = as.factor(num_alt), y= day_of_death)) + 
                   geom_boxplot(fill="gray") +
@@ -125,7 +133,7 @@ F117.plot   <-  ggplot(rhamp_family_117, aes(x = as.factor(num_alt), y= day_of_d
                   labs(x= "Number alternate alleles", y = "Days to death") +
                   theme(axis.text = element_text(size = 12), 
                         axis.title = element_text(size = 14))+ 
-  theme_classic()
+                  theme_classic()
 
 
                 
@@ -134,11 +142,11 @@ final_fig <- ggarrange(F114.plot, F115.plot, F116.plot, F117.plot
                 , ncol = 2, nrow = 2)
 
 pdf(file = "03_results/boxplot_days_to_death_by_num_alt_alleles.pdf", width = 8, height = 5.5)
-tiff(file = "03_results/boxplot_days_to_death_by_num_alt_alleles.tiff", width = 8, height = 5.5, units = "in", res = 300)
+#tiff(file = "03_results/boxplot_days_to_death_by_num_alt_alleles.tiff", width = 8, height = 5.5, units = "in", res = 300)
 print(final_fig)
 dev.off()
 
-# Base R boxplot and linear model stats
+# Optional: base R boxplots and linear model stats
 par(mfrow=c(1,1))
 boxplot(rhamp_merged.df$day_of_death[grep(pattern = "F114", x = rhamp_merged.df$sample_family)] 
         ~ rhamp_merged.df$num_alt[grep(pattern = "F114", x = rhamp_merged.df$sample_family)]
@@ -188,7 +196,7 @@ mod <- lm(formula = rhamp_merged.df$day_of_death[grep(pattern = "F117", x = rham
 summary(mod)
 
 
-#### 03. Mortality (dead or alive) as function of # individuals versus number of alternate alleles#### 
+#### 03. Plot mortality frequency (dead or alive; binary) by number alt allele per family #### 
 
 # Make list of all families
 families <- list(rhamp_family_114, rhamp_family_115, rhamp_family_116, rhamp_family_117)
@@ -206,7 +214,7 @@ for (name in c("114", "115", "116", "117")) {
   mort_barplot.df <- get(paste0("rhamp_family_", name))
   
   # Convert num_alt and mortality to factors
-  mort_barplot.df$num_alt <- as.factor(mort_barplot.df$num_alt)
+  mort_barplot.df$num_alt   <- as.factor(mort_barplot.df$num_alt)
   mort_barplot.df$mortality <- as.factor(mort_barplot.df$mortality)
   
   # Group and summarize number of died/survivors within each family
@@ -214,7 +222,7 @@ for (name in c("114", "115", "116", "117")) {
     group_by(num_alt, mortality) %>%
     summarise(count = n())
   
-  # Convert Mortality back to character for the plot
+  # Convert mortality back to character for the plot
   count_data$mortality <- ifelse(count_data$mortality == "1", "Died", "Survived")
   
   # Create bar plot
@@ -244,38 +252,57 @@ dev.off()
 print(final_bar)
 
 
-####04. Determine proportion of each type of genotype per family ####
-#Make new combined data frame
-rhamp.prop <- rbind(rhamp_family_114,rhamp_family_115,rhamp_family_116,rhamp_family_117)
+#### 04. Determine proportion of each type of genotype per family ####
+# Make new combined data frame (long form)
+rhamp.prop <- rbind(rhamp_family_114, rhamp_family_115, rhamp_family_116, rhamp_family_117)
+head(rhamp.prop)
 
-#Make order of genotypes homo.ref, het, homo.alt
+# Order genotypes by homo.ref, het, homo.alt
 rhamp.prop$majority.geno <- factor(rhamp.prop$majority.geno, levels = c("homo.ref", "het", "homo.alt"))
+table(paste0(rhamp.prop$family, "_", rhamp.prop$majority.geno)) # used for double-checking counts below
                                  
-#Calculate proportions of survivors versus morts
+# Calculate proportions of survivors versus morts
 rhamp.prop <- rhamp.prop %>%
   group_by(family, majority.geno) %>%
   summarise(count = n()) %>%
   mutate(prop = count / sum(count))
+head(rhamp.prop)
 
-#Make bar plot for percentage of each genotype in mapping families. Relabel genotypes
+# Make bar plot for percentage of each genotype in mapping families. Relabel genotypes
 geno.prop <- ggplot(rhamp.prop, aes(x = family, y = prop, fill = majority.geno)) + 
   geom_bar(stat = "identity", position = "dodge", colour = "black") + 
-  geom_text(aes(label = paste0(round(prop*100, 0), "%")), position = position_dodge(width = 0.9), vjust = -0.25) + 
+  geom_text(aes(label = paste0(round(prop*100, 0))), position = position_dodge(width = 0.9), vjust = -0.25) + 
   scale_y_continuous(labels = scales::percent, limits = c(0, 1)) + ylab("Percentage in Family") +
   xlab("Family") + labs(fill = "Genotype") + 
   theme_classic() + theme(axis.text = element_text(size= 12),axis.title = element_text(size = 14)) + scale_fill_manual(values = c("homo.ref" = "white", "het" = "#CCCCCC", "homo.alt" = "#444444"), labels = c("homo.ref" = "ref/ref", "het" = "ref/alt", "homo.alt" = "alt/alt"))    
 
 geno.prop
 
+## Add significance indicators
+# F114
+geno.prop <- geno.prop + geom_text(x = 1.3, y = 0.31, label = "*", size = 10)
+geno.prop <- geno.prop + geom_text(x = 1.3, y = 0.26, label = "\u2193", size = 10)
+
+# F115
+geno.prop <- geno.prop + geom_text(x = 2.3, y = 0.55, label = "*", size = 10)
+geno.prop <- geno.prop + geom_text(x = 2.3, y = 0.50, label = sprintf("\u2191"), size = 10)
+
+# F117
+geno.prop <- geno.prop + geom_text(x = 4.3, y = 0.27, label = "*", size = 10)
+geno.prop <- geno.prop + geom_text(x = 4.3, y = 0.22, label = "\u2193", size = 10)
+
+geno.prop
+
+
 #Save as PDF
-pdf(file = "03_results/proportion_genotype_mapping_family.pdf", width = 8, height = 5.5)
-tiff(file = "03_results/proportion_genotype_mapping_family.tiff", width = 8, height = 5.5, units = "in", res = 300)
+cairo_pdf(file = "03_results/proportion_genotype_mapping_family.pdf", width = 8, height = 5.5)
+#tiff(file = "03_results/proportion_genotype_mapping_family.tiff", width = 8, height = 5.5, units = "in", res = 300)
 print(geno.prop)
 dev.off()
 
 
-####05.Make bar plot of %Survival and % Mortality for all families including non-mapping + control#### 
-mortalitybarplot <- read.csv("00_archive/mortalitybarplot.csv")
+#### 05. Barplot showing per-family percent survivorship, grouped by common cross type, includes all families and control #### 
+mortalitybarplot          <- read.csv("00_archive/mortalitybarplot.csv")
 family_parental_genotypes <- read.csv("02_input_data/OSU_MBP_parental_crosses.csv")
 
 #Convert % to proportions
@@ -306,9 +333,9 @@ dev.off()
 print(mort_bar)
 
 
-####06.Make bar plot of %Survival and % Mortality grouped by family genotypes####
+#### 06. Barplot showing per-family percent survivorship, grouped by common cross type ####
 
-#merge mortality proportions and family parental crosses by genotype. Requires file "OSU_MBP_parental_crosses
+# Merge mortality proportions and family parental crosses by genotype. Requires file "OSU_MBP_parental_crosses
 mort_proportions_and_family_crosses <- merge(mortalitybarplot, family_parental_genotypes, by = "family")
 
 #make so genotype cross orders consistently regardless of which parent.
