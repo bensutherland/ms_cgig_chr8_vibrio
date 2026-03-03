@@ -14,7 +14,7 @@ setwd(current.path)
 rm(current.path)
 
 # Set user variables
-sample_info.FN <- "00_archive/CHRM8_AAB24_Liam_Surry_2024-06-07.csv" # interp file
+sample_info.FN <- "00_archive/OSU_CHR8_VC_Mapping_Family114-117_2024-01-21_MFrhAmpDNAid.txt" # interp file
 
 # Load data
 load(file = "03_results/prepared_rhamp_results.RData")
